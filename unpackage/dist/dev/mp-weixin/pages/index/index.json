@@ -1,0 +1,9 @@
+{
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "usingComponents": {
+    "modal": "/components/modal/modal",
+    "tui-icon": "/components/icon/icon"
+  }
+}
