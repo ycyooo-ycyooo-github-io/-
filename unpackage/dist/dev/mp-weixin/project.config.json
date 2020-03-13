@@ -7,26 +7,12 @@
 		"urlCheck": false,
 		"es6": true,
 		"postcss": true,
-		"preloadBackgroundData": false,
-		"minified": true,
-		"newFeature": true,
-		"coverView": true,
-		"autoAudits": false,
-		"showShadowRootInWxmlPanel": true,
-		"scopeDataCheck": false,
-		"checkInvalidKey": true,
-		"checkSiteMap": true,
-		"uploadWithSourceMap": true,
-		"babelSetting": {
-			"ignore": [],
-			"disablePlugins": [],
-			"outputPath": ""
-		}
+		"minified": true
 	},
 	"compileType": "miniprogram",
 	"libVersion": "2.9.2",
-	"appid": "touristappid",
-	"projectname": "熙美诚品",
+	"appid": "wxb9542528e59d7323",
+	"projectname": "%E7%86%99%E7%BE%8E%E8%AF%9A%E5%93%81",
 	"simulatorType": "wechat",
 	"simulatorPluginLibVersion": {},
 	"condition": {
