@@ -1,0 +1,9 @@
+{
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "会员中心",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "tui-icon": "/components/icon/icon",
+    "tui-modal": "/components/modal/modal"
+  }
+}
