@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "选择门店",
-  "navigationBarBackgroundColor": "#FFFFFF",
-  "usingComponents": {
-    "tui-icon": "/components/icon/icon"
-  }
-}
