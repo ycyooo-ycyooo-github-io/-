@@ -69,5 +69,6 @@
       "desc": "用于小程序位置接口"
     }
   },
-  "usingComponents": {}
+  "usingComponents": {},
+  "sitemapLocation": "sitemap.json"
 }
