@@ -2,7 +2,7 @@
 	<view class="tui-numberbox-class tui-numberbox">
 		<view class="tui-numbox-icon tui-icon-reduce "  @tap="reduce"
 		 :style="{color:iconColor,fontSize:iconSize+'rpx'}"></view>
-		<input type="number" v-model="inputValue"  @blur="blur" class="tui-num-input" :style="{color:color,fontSize:size+'rpx',background:bgcolor,height:height+'rpx',width:width+'rpx'}" />
+		<input type="number" disabled v-model="inputValue"  @blur="blur" class="tui-num-input" :style="{color:color,fontSize:size+'rpx',background:bgcolor,height:height+'rpx',width:width+'rpx'}" />
 		<view class="tui-numbox-icon tui-icon-plus" :class="[disabled || value>=max?'tui-disabled':'']" @tap="plus" :style="{color:iconColor,fontSize:iconSize+'rpx'}"></view>
 	</view>
 </template>
@@ -153,6 +153,12 @@
 			handleChange(value, type) {
 				if (this.disabled) return;
 				this.$emit('change', {
+					value: value,
+					type: type,
+					index: this.index,
+					custom: this.custom
+				})
+				this.$emit('blur', {
 					value: value,
 					type: type,
 					index: this.index,

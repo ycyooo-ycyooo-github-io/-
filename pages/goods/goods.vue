@@ -21,7 +21,7 @@
 				<view class="middle">
 					<view v-for="(anchor,index) in anchorlist" :class="[selectAnchor==index ?'on':'']" :key="index" @tap="toAnchor(index)">{{anchor.name}}</view>
 				</view>
-				<view class="icon-btn">
+				<view class="icon-btn" v-if="goodsData.group_price">
 
 					<view class="icon cart" @tap="joinCart"></view>
 				</view>
@@ -48,10 +48,24 @@
 					<view class="text">购物车</view>
 				</view>
 			</view>
-			<view class="btn">
+			<view class="btn" v-if="goodsData.group_price">
+				<view class="buy" style="text-align: center;display: block;" @tap="buy">
+					<view class="">
+						<view v-if="goodsData.disPrice">￥{{goodsData.disPrice}}</view>
+						<view v-else>￥{{goodsData.price}}</view>
+					</view>					
+					<view>单独购买</view>
+				</view>
+				<view class="joinCart" style="text-align: center;display: block;" @tap="joinGroup">
+					<view class="price" v-if="goodsData.group_price">￥{{goodsData.group_price}}</view>
+					<view>{{group_num}}人团</view>
+				</view>
+				
+			</view>
+			<view class="btn" v-else>
 				<view class="joinCart" @tap="joinCart">加入购物车</view>
 				<view class="buy" @tap="buy">立即购买</view>
-			</view>
+			</view>			
 		</view>
 		<view class="bottom">
 
@@ -147,7 +161,8 @@
 				秒杀价:￥<text style="font-weight: bold;font-size: 34rpx;">{{secPrice}}</text>
 			</view>
 			<view class="time">
-				<text>距结束仅剩:</text><tui-countdown :time="endTime" bcolor="#fff" :days="true" :isColon="false"></tui-countdown>
+				<text>距结束仅剩:</text>
+				<tui-countdown :time="endTime" bcolor="#fff" :isColon="false"></tui-countdown>
 			</view>
 		</view>
 		<view class="seckill" v-if="nextShow">
@@ -155,7 +170,8 @@
 				秒杀价:￥<text style="font-weight: bold;font-size: 34rpx;">{{secPrice}}</text>
 			</view>
 			<view class="time">
-				<text>距开始还有:</text><tui-countdown :time="startTime" bcolor="#fff" :days="true" :isColon="false"></tui-countdown>
+				<text>距开始还有:</text>
+				<tui-countdown :time="startTime" bcolor="#fff" :isColon="false"></tui-countdown>
 			</view>
 		</view>
 		<!-- 标题 价格 -->
@@ -163,7 +179,8 @@
 			<view class="goods-info">
 				<view class="title">{{goodsData.name}}</view>
 				<view class="price" v-if="goodsData.disPrice">￥{{goodsData.disPrice}}<text style="font-size: 28rpx;text-decoration: line-through;color: #b2b2b2;margin-left: 15rpx;">{{goodsData.price}}</text></view>
-				<view class="price" v-else>
+				<view class="price" v-if="goodsData.group_price"><text style="font-size: 26rpx;">拼团价</text>￥{{goodsData.group_price}}<text style="font-size: 28rpx;text-decoration: line-through;color: #b2b2b2;margin-left: 15rpx;">{{goodsData.price}}</text></view>
+				<view class="price" v-if="!goodsData.disPrice&&!goodsData.group_price">
 					￥{{goodsData.price}}
 				</view>
 			</view>
@@ -188,6 +205,23 @@
 					<tui-numberbox :value="value" @change="change"></tui-numberbox>
 				</view>
 			</view>
+			<view class="" v-if="couponList.length>0" style="border-bottom: 1px solid #ddd;">
+				<view class="row" style="border-bottom: 0;padding-bottom: 0;">
+					<view class="text">全场通用（组合套装和秒杀商品除外）</view>
+					
+				</view>
+				<view class="" style="display: flex;justify-content: space-between;flex-wrap: wrap;align-items: center;padding: 25rpx 0;">
+					<view class="row coupon" v-for="(item,index) in couponList" :key="index">
+						<view class="cartIcon">
+							￥{{parseInt(item[1].money)}}
+						</view>
+						<view class="text">
+							{{item[0]}}
+						</view>
+					</view>
+				</view>
+				
+			</view>
 			<view class="row" @tap="showService">
 				<view class="text">服务：</view>
 				<view class="content">
@@ -195,6 +229,50 @@
 				</view>
 				<view class="arrow">
 					<view class="icon xiangyou"></view>
+				</view>
+			</view>
+		</view>
+		<!-- 拼团规则 -->
+		<view class="group-rule" v-if="goodsData.group_price">
+			<view class="title">
+				<text class="bib">好友团</text>
+				<text style="margin: 0 10upx;">▪</text>
+				<text>新老用户都可开团/参团</text>
+			</view>
+			<view class="ul">
+				<view class="li" v-for="(item,index) in rule" :key="index">
+					<view class="mark">{{index+1}}</view>
+					<view class="tit">{{item}}</view>
+					<!-- <view class="hr" v-if="index!=3">
+					</view> -->
+				</view>
+			</view>
+		</view>
+		<!-- 拼团 -->
+		<view class="group" v-if="goodsData.group_price&&groupList.length!=0">
+			<view class="tip">
+				以下小伙伴正在发起拼团，可直接参与
+			</view>
+			<view v-for="(item,index) in groupList" :key="index">
+				<view class="group-item" v-for="(row,k) in item.list" :key="k">
+					<view class="left">
+						<view class="img">
+							<image :src="row.avatar" mode=""></image>
+						</view>
+						<view class="info">
+							<view class="">
+								{{row.nickname}}
+							</view>
+							<view class="time">
+								还差<text style="color: red;">{{item.num}}</text>人，剩余
+								<tui-countdown :time="item.seckillTime" color='#666666' bcolor="#fff" style="margin-left: 10rpx;margin-top: 6rpx;"></tui-countdown>
+								结束
+							</view>
+						</view>
+					</view>
+					<view class="right" @click="bindGroup(item)">
+						去参团
+					</view>
 				</view>
 			</view>
 
@@ -230,7 +308,7 @@
 		<!-- 详情 -->
 		<view class="description">
 			<view class="title">———— 商品详情 ————</view>
-			<view class="content">
+			<view class="content" style="padding-bottom: 120rpx;">
 				<rich-text :nodes="descriptionStr"></rich-text>
 			</view>
 		</view>
@@ -307,24 +385,9 @@
 					name: "",
 					price: "",
 					disPrice: '',
+					group_price: '',
 					number: 1,
-					service: [{
-							name: "7天无忧退货",
-							description: "此商品官方保证7天退货"
-						},
-						{
-							name: "满59包邮",
-							description: "此商品享受满59包邮"
-						},
-						{
-							name: "2个工作日退款",
-							description: "此商品享受退货极速退款服务"
-						},
-						{
-							name: "熙美诚品自营",
-							description: "熙美诚品原创生活类品牌，所有商品均为熙美诚品自营，品质保证"
-						}
-					],
+					service: [],
 					spec: ["XS", "S", "M", "L", "XL", "XXL"],
 					comment: {
 						number: 0,
@@ -346,13 +409,27 @@
 				canvasFlag: true,
 				posterData: {},
 				// 是否开始秒杀
-				secShow:false,
-				endTime:0,
+				secShow: false,
+				endTime: 0,
 				// 秒杀价格
-				secPrice:0,
+				secPrice: 0,
 				// 下一场秒杀
-				nextShow:false,
-				startTime:0
+				nextShow: false,
+				startTime: 0,
+				//是否参与开团
+				group: '',
+				// 开团规则
+				rule: [
+					'选择商品',
+					'支付开团',
+					'分享好友',
+					'成功(失败退款)'
+				],
+				groupList: [],
+				group_num: '',
+				group_gid: '',
+				// 优惠券
+				couponList:[]
 			};
 		},
 		onLoad(option) {
@@ -361,23 +438,28 @@
 			//小程序隐藏返回按钮
 			this.showBack = false;
 			// #endif
-			var text = getSecret();
-			this.secret = text.secret;
-			this.timestamp = text.timestamp;
+			// var text = getSecret();
+			// this.secret = text.secret;
+			// this.timestamp = text.timestamp;
 			this.gid = option.gid;
-			this.getDetails();
-
+			// this.getDetails();
+			if (option) {
+				if (option.type) {
+					this.group = option
+				}
+			}
 
 		},
 		onShow() {
 
-			uni.getStorage({
-				key: 'user',
-				success: (res) => {
-					this.xopenid = res.data.openid;
+			this.getDetails()
+			// uni.getStorage({
+			// 	key: 'user',
+			// 	success: (res) => {
+			// 		this.xopenid = res.data.openid;
 
-				}
-			});
+			// 	}
+			// });
 		},
 		onReady() {
 			this.calcAnchor(); //计算锚点高度，页面数据是ajax加载时，请把此行放在数据渲染完成事件中执行以保证高度计算正确
@@ -402,40 +484,79 @@
 		methods: {
 			// 获取商品详情
 			getDetails() {
-				let data={
+				let data = {
 					id: this.gid,
-				
 				};
-				this.$xm.post('/Product/getInfo',data,(res)=>{
+				this.$xm.post('/Product/getInfo', data, (res) => {
 					let result = res;
 					this.goodsData.id = result.id;
 					this.goodsData.price = result.pro_price;
 					this.goodsData.name = result.pro_name;
 					this.goodsData.disPrice = result.dis_price;
-					this.secPrice=result.sec_price;
+					this.goodsData.group_price = result.group_price;
+					this.goodsData.service = result.service;
+					this.secPrice = result.sec_price;
+					this.group_gid = result.gid
+					this.group_num = result.group_num
+					this.couponList=result.discount;
 					if (result.keep) {
 						this.isKeep = true
 					} else {
 						this.isKeep = false
 					}
-					if(result.nextstart){
-						this.nextShow=true;
+					if (result.nextstart) {
+						this.nextShow = true;
 						this.startTime = parseInt(result.nextstart) - Math.round(new Date() / 1000);
-					}else{
-						this.nextShow=false
+					} else {
+						this.nextShow = false
 					}
-					if(result.etime){
-						this.secShow=true;
+					if (result.etime) {
+						this.secShow = true;
 						this.endTime = parseInt(result.etime) - Math.round(new Date() / 1000);
-					}else{
-						this.secShow=false;
+					} else {
+						this.secShow = false;
+					}
+					if (result.group_price) {
+						this.groupData();
 					}
 					this.swiperList[0].img = 'http://ximiphoto.oss-cn-hangzhou.aliyuncs.com/thumb/' + result.pro_sn +
-						'.jpg?x-oss-process=style/440';
+						'.jpg?x-oss-process=style/600';
 					this.descriptionStr = '<div style="text-align:center;"><img width="100%" src="http://img.xmvogue.com/detail/' +
 						result.pro_sn + '-.jpg?x-oss-process=style/800"/></div>'
 				})
-				
+
+			},
+			// 拼团用户
+			groupData() {
+				let data = {
+					gid: this.gid
+				}
+				this.$xm.post('/groupbuy/get_group_list', data, (res) => {
+					if (res) {
+						res.forEach((item) => {
+							item.num = Number(item.group_num) - Number(item.list.length);
+							item.seckillTime = parseInt(item.etime) - Math.round(new Date() / 1000);
+						})
+
+						this.groupList = res;
+
+					}
+				})
+			},
+			// 申请参团
+			bindGroup(item) {
+				// 参团
+				let store;
+				if (uni.getStorageSync('store').store_code) {
+					store = uni.getStorageSync('store').store_code;
+				} else {
+					store = 10001
+				}
+				uni.navigateTo({
+					url: '../order/confirmation?store=' + store + '&proid=' + this.gid + '&pronum=' + this.value + '&type=join' +
+						'&groupid=' + item.geoup_id +
+						'&sid=' + item.gid
+				})
 			},
 			// 收藏
 			like() {
@@ -485,7 +606,16 @@
 			// 调整购买数量
 			change(e) {
 				this.value = e.value;
-				console.log(this.value);
+				console.log(this.secPrice)
+				if (this.secPrice) {
+					if (this.value > 1) {
+						this.value = 1;
+						uni.showToast({
+							title: "秒杀商品限购一件！",
+							icon: 'none'
+						});
+					}
+				}
 				if (this.value < 1) {
 					this.value = 1;
 					uni.showToast({
@@ -543,9 +673,14 @@
 				};
 				this.$xm.post('/Cart/add', data, (res) => {
 					let result = res.msg;
-					if (result == '加入购物车成功') {
+					if (res.s == 1) {
 						uni.showToast({
-							title: "已加入购物车"
+							title: result
+						});
+					} else if (res.s == 0) {
+						uni.showToast({
+							title: result,
+							icon: 'none'
 						});
 					}
 				})
@@ -553,7 +688,6 @@
 			},
 			//立即购买
 			buy() {
-				this.joinCart();
 				this.toConfirmation();
 			},
 			//商品评论
@@ -564,8 +698,14 @@
 			},
 			//跳转确认订单页面
 			toConfirmation() {
+				let store;
+				if (uni.getStorageSync('store').store_code) {
+					store = uni.getStorageSync('store').store_code;
+				} else {
+					store = 10001
+				}
 				uni.navigateTo({
-					url: '../order/confirmation'
+					url: '../order/confirmation?store=' + store + '&proid=' + this.gid + '&pronum=' + this.value
 				})
 			},
 			//跳转评论列表
@@ -661,6 +801,32 @@
 				}, 200);
 			},
 			discard() {
+
+			},
+			// 参加团购
+			joinGroup() {
+				let store;
+				if (uni.getStorageSync('store').store_code) {
+					store = uni.getStorageSync('store').store_code;
+				} else {
+					store = 10001
+				}
+				// 参团
+
+				if (this.group.type == 'join') {
+					uni.navigateTo({
+						url: '../order/confirmation?store=' + store + '&proid=' + this.gid + '&pronum=' + this.value + '&type=' + this.group
+							.type + '&groupid=' + this.group.groupid +
+							'&sid=' + this.group_gid
+					})
+				} else {
+					// 开团
+					uni.navigateTo({
+						url: '../order/confirmation?store=' + store + '&proid=' + this.gid + '&pronum=' + this.value + '&type=' + this.group
+							.type +
+							'&sid=' + this.group_gid
+					})
+				}
 
 			}
 		}
@@ -911,17 +1077,20 @@
 			background-color: rgba(0, 0, 0, 0.2);
 		}
 	}
-	.seckill{
+
+	.seckill {
 		padding: 20rpx 30rpx;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		background-image: linear-gradient(right, #EB5155, #E9797F);
 		font-size: 30rpx;
-		.secPrice{
+
+		.secPrice {
 			color: #FFFFFF;
 		}
-		.time{
+
+		.time {
 			background-color: #FFFFFF;
 			border-radius: 100rpx;
 			padding: 15rpx 20rpx;
@@ -929,11 +1098,13 @@
 			display: flex;
 			align-items: center;
 			flex-wrap: nowrap;
-			text{
-				white-space:nowrap
+
+			text {
+				white-space: nowrap
 			}
 		}
 	}
+
 	.info-box {
 		width: 92%;
 		padding: 20upx 4%;
@@ -949,7 +1120,7 @@
 	}
 
 	.goods-info {
-		width: 75%;
+		width: 85%;
 		border-right: 1px solid #EEEEEE;
 
 		.price {
@@ -965,9 +1136,9 @@
 	}
 
 	.right-info {
-		width: 25%;
+		width: 15%;
 		text-align: center;
-
+		margin-top: 10upx;
 		.two {
 			font-size: 24upx;
 			color: #757575;
@@ -978,7 +1149,7 @@
 			margin-top: 12upx;
 			color: #757575;
 			width: 100upx;
-			font-size: 24upx;
+			font-size: 22upx;
 			padding: 8upx 0;
 			border-radius: 20upx;
 			border: 1px solid #EEEEEE;
@@ -1045,6 +1216,25 @@
 				.icon {
 					color: #ccc;
 				}
+			}
+		}
+		.coupon {
+			justify-content: left;
+			border: 0;
+			padding: 0;
+			width: 33%;
+			.cartIcon {
+				padding: 0 6rpx;
+				font-size: 18rpx;
+				border: 1px solid red;
+				color: red;
+				text-align: center;
+			}
+		
+			.text {
+				padding-left: 15rpx;
+				font-size: 24rpx;
+				color: #000;
 			}
 		}
 	}
@@ -1122,7 +1312,8 @@
 	}
 
 	.description {
-		padding-bottom: 100rpx;
+
+		// padding-bottom: 100rpx;
 		.title {
 			width: 100%;
 			height: 80upx;
@@ -1233,10 +1424,10 @@
 		.layer {
 			position: fixed;
 			z-index: 22;
-			bottom: -70%;
+			bottom: -60%;
 			width: 92%;
 			padding: 0 4%;
-			height: 70%;
+			height: 60%;
 			border-radius: 20upx 20upx 0 0;
 			background-color: #fff;
 			display: flex;
@@ -1490,6 +1681,116 @@
 				justify-content: center;
 				align-items: center;
 				font-size: 34upx;
+			}
+		}
+	}
+
+	.group {
+		font-size: 28upx;
+		background-color: #FFFFFF;
+		margin: 30upx 0;
+
+		.tip {
+			color: #999999;
+			margin: 10upx 0 20upx 0;
+			padding: 20upx 20upx 0 20upx;
+
+		}
+
+		.group-item {
+			padding: 10upx 20upx;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin: 10upx 0;
+			border-bottom: 1px solid #EEEEEE;
+
+			.left {
+				display: flex;
+
+				image {
+					height: 100%;
+					width: 100%;
+					border-radius: 50%;
+				}
+
+				.img {
+					height: 75upx;
+					width: 75upx;
+					border-radius: 50%;
+					margin-right: 20upx;
+				}
+
+				.info {
+					.time {
+						display: flex;
+						align-items: center;
+						font-size: 24upx;
+						color: #666666;
+						margin-top: 10upx;
+					}
+				}
+			}
+
+			.right {
+				width: 100upx;
+				height: 50upx;
+				line-height: 50upx;
+
+				text-align: center;
+				color: #c03d38;
+				border: 1px solid #c03d38;
+				border-radius: 10upx;
+			}
+		}
+	}
+
+	.group-rule {
+		background: #FFFFFF;
+
+		.title {
+			padding: 20upx;
+			color: #333333;
+			font-size: 25upx;
+			border-bottom: 1px solid #EEEEEE;
+
+			.bib {
+				font-size: 28upx;
+				margin: 0 5upx;
+			}
+		}
+
+		.ul {
+			padding: 20upx 0;
+			display: flex;
+			justify-content: space-around;
+			font-size: 24upx;
+
+			.li {
+				display: flex;
+				align-items: center;
+
+
+				.mark {
+					font-size: 20upx;
+					background-color: #666666;
+					color: #FFFFFF;
+					width: 24upx;
+					height: 24upx;
+					border-radius: 50%;
+					line-height: 24upx;
+					text-align: center;
+					margin: 0 5upx;
+				}
+
+				.tit {
+					color: #666666;
+				}
+
+				.hr {
+					border-top: 1px dotted #666;
+					width: 20upx;
+				}
 			}
 		}
 	}

@@ -4,6 +4,8 @@ import VueLazyload from 'vue-lazyload' //图片的懒加载
 Vue.config.productionTip = false
 import index from './common/request'
 import store from 'store/index.js'
+import tuiScrollTop from "./components/scroll-top/scroll-top.vue"
+Vue.component('tui-scroll-top',tuiScrollTop)
 App.mpType = 'app'
 Vue.prototype.$xm = index;
 Vue.use(VueLazyload, {

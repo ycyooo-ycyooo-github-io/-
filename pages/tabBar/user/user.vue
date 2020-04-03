@@ -33,7 +33,7 @@
 				<text>会员积分</text>
 			</view>
 			<view class="item" @tap="toPage('../../user/coupon/coupon')">
-				<h4>0</h4>
+				<h4>{{cnum || 0}}</h4>
 				<text>优惠券</text>
 			</view>
 			<view class="item" @tap="toCart()">
@@ -49,15 +49,22 @@
 			<!-- 订单类型 -->
 			<view class="hearder">
 				<view class="title">我的订单</view>
-				<view class="all">
+				<!-- <view class="all">
 					<view @tap="toOrderList()">
 						全部订单
 					</view>
 					<view class="icon xiangyou"></view>
-				</view>
+				</view> -->
 			</view>
 
 			<view class="list">
+				<view class="box" @tap="toOrderList()">
+					<view class="img">
+						<tui-icon name="calendar" color="#e84341" size="27"></tui-icon>
+						<text class="num" v-if="totalNum>0">{{totalNum}}</text>
+					</view>
+					<view class="text">全部</view>
+				</view>
 				<view class="box" v-for="(row,index) in orderList" :key="index" @tap="toOrderList(row.id)">
 					<view class="img">
 						<view class="icon" :class="row.icon"></view>
@@ -87,9 +94,9 @@
 		<tui-modal :show="showModal" :custom="true" :fadein="true">
 			<view class="tui-modal-custom">
 				<view class="tui-prompt-title">为更好的提供服务给您</view>
-				<view class="tui-prompt-title">我们需要您最基本的授权（头像，昵称）</view>
-				<button type="warn" open-type="getUserInfo" @getuserinfo="getuserinfo" withCredentials="true" style="margin: 20rpx 0;">授权登录</button>
-
+				<view class="tui-prompt-title">我们需要您最基本的授权（头像，昵称）</view>				
+				<!-- 字节跳动 -->
+				<button type="warn" open-type="getUserInfo" @getuserinfo="getuserinfo" withCredentials="true" style="margin: 20rpx 0;" :class="userProvider=='weixin' ? '':'accredit'" >授权登录</button>
 			</view>
 
 		</tui-modal>
@@ -106,34 +113,36 @@
 		},
 		data() {
 			return {
-				secret: {},
+				userProvider:'',
 				userInfo: '',
 				showModal: true,
 				// 订单类型
-				orderList: [{
-						text: '未付款',
+				totalNum:0,
+				orderList: [
+					{
+						text: '待付款',
 						icon: "fukuan",
 						id: "0",
 						num: 0
 					},
 					{
-						text: '已付款',
+						text: '待发货',
 						icon: "fahuo",
 						id: "1",
 						num: 0
 					},
 					{
-						text: '已发货',
+						text: '待收货',
 						icon: "shouhuo",
 						id: "3",
 						num: 0
 					},
-					{
-						text: '已收货',
-						icon: "pingjia",
-						id: "4",
-						num: 0
-					},
+					// {
+					// 	text: '已收货',
+					// 	icon: "pingjia",
+					// 	id: "4",
+					// 	num: 0
+					// },
 					{
 						text: '退款',
 						icon: "tuihuo",
@@ -161,20 +170,16 @@
 					},
 				],
 				// 购物车数量
-				count: 0
+				count: 0,
+				cnum:0, //优惠券数量
 			}
 		},
 		onLoad() {
-			uni.getStorage({
-				key: 'user',
-				success: (res) => {
-					this.secret = res.data;
-				}
-			})
-
+			this.userProvider=this.$xm.userProvider();
 		},
 		onShow() {
 			this.getcount();
+			this.getCoupon()
 			uni.getStorage({
 				key: 'cart',
 				success: (res) => {
@@ -185,9 +190,54 @@
 			uni.getStorage({
 				key: 'userInfo',
 				success: (res) => {
+					console.log(res)
 					this.userInfo = res.data;
 					if (!this.userInfo) {
-						this.showModal = true
+						if(this.userProvider=='weixin'){
+							this.showModal = true
+						}else{
+							uni.login({
+								success: (res) => {
+									if (res.code) {
+										var code = res.code
+										uni.getUserInfo({
+											success: (res) => {	
+												this.userInfo = res.userInfo;
+												let data = {
+													encryptedData: res.encryptedData,
+													iv: res.iv
+												}
+												this.$xm.post('/Index/getUnionid', data, (res) => {
+													const user = uni.getStorageSync('user');
+													user.unionid=res.unionid;
+													uni.setStorage({
+														key: 'user',
+														data: user,
+														success: (res) => {
+															console.log(res);
+														}
+													});
+												})
+												uni.setStorage({
+													key: 'userInfo',
+													data: res.userInfo,
+													success: (res) => {
+														console.log(res);
+													}
+												});
+							
+											},
+											fail: res => {
+												console.log(res)
+												// 获取失败的去引导用户授权 
+											}
+										})
+							
+									} else {}
+								}
+							})
+						}
+						
 					} else {
 						this.showModal = false;
 					}
@@ -200,6 +250,7 @@
 				// wx登录
 				uni.login({
 					success: (res) => {
+						console.log(res)
 						if (res.code) {
 							var code = res.code
 							uni.getUserInfo({
@@ -208,16 +259,14 @@
 									this.showModal = false;
 									let data = {
 										encryptedData: res.encryptedData,
-										iv: res.iv,
-										sessionKey: this.secret.sessionKey,
-										secret: this.secret.secret,
-										timestamp: this.secret.timestamp,
+										iv: res.iv
 									}
 									this.$xm.post('/Index/getUnionid', data, (res) => {
-										this.secret.unionid = res.unionid
+										const user = uni.getStorageSync('user');
+										user.unionid=res.unionid;
 										uni.setStorage({
 											key: 'user',
-											data: this.secret,
+											data: user,
 											success: (res) => {
 												console.log(res);
 											}
@@ -233,6 +282,7 @@
 
 								},
 								fail: res => {
+									console.log(res)
 									// 获取失败的去引导用户授权 
 								}
 							})
@@ -254,16 +304,33 @@
 			// 获取订单shuliang
 			getcount() {				
 				this.$xm.post('/Mine/index', '', (res) => {
-					console.log(res);
 					let result = res.order_state;
-					for(let i in result){
-						
-						if(result[i].order_state==this.orderList[i].id){
-							this.orderList[i].num=result[i].state
+					let ids=result.map(ele=>{
+						return ele.order_state
+					})
+					let num=0;
+					result.forEach(ele=>{
+						num+=Number(ele.state);
+					});
+					this.totalNum=num;
+					ids = ids.toString().replace(/,/g, "");
+					this.orderList.forEach(ele => {						
+						if (ids.indexOf(ele.id) !== -1) {							
+							let index=ids.indexOf(ele.id);							
+							ele.num=result[index].state
+						} else {
+							ele.num=0
 						}
-					}
-
-
+					})
+				})
+			},
+			// 获取优惠券
+			getCoupon(){
+				let data={
+					type:1
+				};
+				this.$xm.post('/Coupon/index',data,(res)=>{
+					this.cnum=res.data.length
 				})
 			},
 			toCart() {
@@ -514,5 +581,10 @@
 				margin-left: 10upx;
 			}
 		}
+	}
+	// 字节跳动
+	.accredit{
+		background: #e41f19;
+		color: #fff;
 	}
 </style>

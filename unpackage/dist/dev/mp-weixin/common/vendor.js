@@ -1553,7 +1553,7 @@ uni$1;exports.default = _default;
 
 /***/ 12:
 /*!*****************************************!*\
-  !*** D:/work/熙美小程序/common/utils/md5.js ***!
+  !*** E:/项萍/熙美小程序12/common/utils/md5.js ***!
   \*****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -1690,7 +1690,7 @@ function normalizeComponent (
 
 /***/ 16:
 /*!*******************************************************************!*\
-  !*** D:/work/熙美小程序/node_modules/vue-lazyload/vue-lazyload.esm.js ***!
+  !*** E:/项萍/熙美小程序12/node_modules/vue-lazyload/vue-lazyload.esm.js ***!
   \*******************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -3506,62 +3506,112 @@ index;exports.default = _default;
 
 /***/ 17:
 /*!***************************************!*\
-  !*** D:/work/熙美小程序/common/request.js ***!
+  !*** E:/项萍/熙美小程序12/common/request.js ***!
   \***************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(uni) {Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _env = __webpack_require__(/*! ./ajax/env.js */ 18);
+
+
+var _md = _interopRequireDefault(__webpack_require__(/*! ./utils/md5.js */ 12));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
 // POST请求
 function post(url, params, _success, _fail) {
   var that = this;
-  var user = uni.getStorageSync('user');
-  var cooking = JSON.parse(JSON.stringify(user).replace(/openid/g, "xopenid"));
-  if (uni.getStorageSync('store').store_code) {
-    cooking.store = uni.getStorageSync('store').store_code;
+  if (uni.getStorageSync('user')) {
+    var user = uni.getStorageSync('user');
+    var cooking = JSON.parse(JSON.stringify(user).replace(/openid/g, "xopenid"));
+    if (uni.getStorageSync('store').store_code) {
+      cooking.store = uni.getStorageSync('store').store_code;
+    } else {
+      cooking.store = '10001';
+    }
+    var label = Object.assign(cooking, params);
+    uni.request({
+      url: _env.ApiUrl + url,
+      method: 'POST',
+      header: {
+        'Content-type': 'application/x-www-form-urlencoded' },
+
+      data: label,
+      success: function success(res) {
+        _success(res.data); //回调
+      },
+      fail: function fail(res) {
+        console.log(res);
+        uni.hideLoading();
+        uni.showModal({
+          content: "网络异常,请重新加载",
+          success: function success(e) {
+            if (e.confirm) {
+              load("重新加载");
+              loadsatus = 2;
+              setTimeout(function () {
+                post(url, params, _success, _fail);
+              }, 1000);
+            }
+          } });
+
+        if (res.errMsg == "request:fail timeout") {
+          return false;
+        };
+        _fail(res); //回调
+      },
+      complete: function complete() {} });
+
   } else {
-    cooking.store = '10001';
+    console.log("登录失败");
+    uni.getProvider({
+      service: 'oauth',
+      success: function success(res) {
+        console.log(res.provider[0]);
+        var http;
+        if (res.provider[0] == 'weixin') {
+          http = 'https://dh.xmvogue.com/API/Index/index/';
+        } else {
+          http = 'https://dh.xmvogue.com/API/Index/index_zjtd/';
+        }
+        uni.login({
+          provider: res.provider[0],
+          success: function success(res) {
+            var timestamp = new Date().getTime();
+            var secret = _md.default.hex_md5("XM#" + _md.default.hex_md5(String(timestamp)) + "@secret");
+            console.log(res);
+            if (res.code) {
+              uni.request({
+                url: http,
+                data: {
+                  code: res.code,
+                  secret: secret,
+                  timestamp: timestamp },
+
+                method: 'POST',
+                header: {
+                  "Content-Type": "application/x-www-form-urlencoded" //自定义请求头信息
+                },
+                success: function success(res) {
+                  res.data.secret = secret;
+                  res.data.timestamp = timestamp;
+                  uni.setStorage({
+                    key: 'user',
+                    data: res.data,
+                    success: function success(res) {
+                      post(url, params, _success, _fail);
+                    } });
+
+                } });
+
+            }
+          } });
+
+      } });
+
   }
-
-  var label = Object.assign(cooking, params);
-  uni.request({
-    url: _env.ApiUrl + url,
-    method: 'POST',
-    header: {
-      'Content-type': 'application/x-www-form-urlencoded' },
-
-    data: label,
-    success: function success(res) {
-
-      _success(res.data); //回调
-    },
-    fail: function fail(res) {
-      console.log(res);
-      uni.hideLoading();
-      uni.showModal({
-        content: "网络异常,请重新加载",
-        success: function success(e) {
-          if (e.confirm) {
-            load("重新加载");
-            loadsatus = 2;
-            setTimeout(function () {
-              post(url, params, _success, _fail);
-            }, 1000);
-          }
-        } });
-
-      if (res.errMsg == "request:fail timeout") {
-        return false;
-      };
-      _fail(res); //回调
-    },
-    complete: function complete() {} });
 
 }
 // 优化商品数据
 function requestImg(list) {
-  console.log(list);
   list.forEach(function (item, index) {
     if (item.pro_price) {
       item.pro_price = Number(item.pro_price);
@@ -3587,30 +3637,55 @@ function changeTime(time) {
   m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()) + ":",
   s = date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds();
   return z + b + n + h + m + s;
+}
+/**
+   * 把时间转化成2017-05-28类似这样的时间格式
+   */
+function changeDay(time) {
+  var date = new Date(time);
+  var z = date.getFullYear() + '-',
+  b = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1) + '-',
+  n = date.getDate() < 10 ? '0' + date.getDate() : date.getDate();
+  return z + b + n;
+}
+// 登录方式
+function userProvider() {
+  var provider;
+  uni.getProvider({
+    service: 'oauth',
+    success: function success(res) {
+      provider = res.provider[0];
+    } });
+
+  return provider;
 }var _default =
 {
   post: post,
   requestImg: requestImg,
-  changeTime: changeTime };exports.default = _default;
+  changeTime: changeTime,
+  changeDay: changeDay,
+  userProvider: userProvider };exports.default = _default;
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 1)["default"]))
 
 /***/ }),
 
 /***/ 18:
 /*!****************************************!*\
-  !*** D:/work/熙美小程序/common/ajax/env.js ***!
+  !*** E:/项萍/熙美小程序12/common/ajax/env.js ***!
   \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });exports.ApiUrl = void 0;var ApiUrl = 'https://dh.xmvogue.com/API';exports.ApiUrl = ApiUrl;
+Object.defineProperty(exports, "__esModule", { value: true });exports.ApiUrl = void 0;var ApiUrl = 'https://dh.xmvogue.com/API';
+// const ApiUrl = 'http://172.21.8.79/miniprogram/index.php/API';
+exports.ApiUrl = ApiUrl;
 
 /***/ }),
 
 /***/ 19:
 /*!************************************!*\
-  !*** D:/work/熙美小程序/store/index.js ***!
+  !*** E:/项萍/熙美小程序12/store/index.js ***!
   \************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -10656,7 +10731,7 @@ var index_esm = {
 
 /***/ 21:
 /*!******************************************!*\
-  !*** D:/work/熙美小程序/static/img/error.jpg ***!
+  !*** E:/项萍/熙美小程序12/static/img/error.jpg ***!
   \******************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
@@ -10665,9 +10740,563 @@ module.exports = "data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/
 
 /***/ }),
 
-/***/ 257:
+/***/ 28:
+/*!********************************************************!*\
+  !*** E:/项萍/熙美小程序12/common/utils/qqmap-wx-jssdk.min.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+function _classCallCheck(instance, Constructor) {if (!(instance instanceof Constructor)) {throw new TypeError("Cannot call a class as a function");}}function _defineProperties(target, props) {for (var i = 0; i < props.length; i++) {var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);}}function _createClass(Constructor, protoProps, staticProps) {if (protoProps) _defineProperties(Constructor.prototype, protoProps);if (staticProps) _defineProperties(Constructor, staticProps);return Constructor;} /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * 微信小程序JavaScriptSDK
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @version 1.0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @date 2017-01-10
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @author jaysonzhou@tencent.com
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
+
+var ERROR_CONF = {
+  KEY_ERR: 311,
+  KEY_ERR_MSG: 'key格式错误',
+  PARAM_ERR: 310,
+  PARAM_ERR_MSG: '请求参数信息有误',
+  SYSTEM_ERR: 600,
+  SYSTEM_ERR_MSG: '系统错误',
+  WX_ERR_CODE: 1000,
+  WX_OK_CODE: 200 };
+
+var BASE_URL = 'https://apis.map.qq.com/ws/';
+var URL_SEARCH = BASE_URL + 'place/v1/search';
+var URL_SUGGESTION = BASE_URL + 'place/v1/suggestion';
+var URL_GET_GEOCODER = BASE_URL + 'geocoder/v1/';
+var URL_CITY_LIST = BASE_URL + 'district/v1/list';
+var URL_AREA_LIST = BASE_URL + 'district/v1/getchildren';
+var URL_DISTANCE = BASE_URL + 'distance/v1/';
+var Utils = {
+  /**
+               * 得到终点query字符串
+               * @param {Array|String} 检索数据
+               */
+  location2query: function location2query(data) {
+    if (typeof data == 'string') {
+      return data;
+    }
+    var query = '';
+    for (var i = 0; i < data.length; i++) {
+      var d = data[i];
+      if (!!query) {
+        query += ';';
+      }
+      if (d.location) {
+        query = query + d.location.lat + ',' + d.location.lng;
+      }
+      if (d.latitude && d.longitude) {
+        query = query + d.latitude + ',' + d.longitude;
+      }
+    }
+    return query;
+  },
+
+  /**
+      * 使用微信接口进行定位
+      */
+  getWXLocation: function getWXLocation(success, fail, complete) {
+    wx.getLocation({
+      type: 'gcj02',
+      success: success,
+      fail: fail,
+      complete: complete });
+
+  },
+
+  /**
+      * 获取location参数
+      */
+  getLocationParam: function getLocationParam(location) {
+    if (typeof location == 'string') {
+      var locationArr = location.split(',');
+      if (locationArr.length === 2) {
+        location = {
+          latitude: location.split(',')[0],
+          longitude: location.split(',')[1] };
+
+      } else {
+        location = {};
+      }
+    }
+    return location;
+  },
+
+  /**
+      * 回调函数默认处理
+      */
+  polyfillParam: function polyfillParam(param) {
+    param.success = param.success || function () {};
+    param.fail = param.fail || function () {};
+    param.complete = param.complete || function () {};
+  },
+
+  /**
+      * 验证param对应的key值是否为空
+      * 
+      * @param {Object} param 接口参数
+      * @param {String} key 对应参数的key
+      */
+  checkParamKeyEmpty: function checkParamKeyEmpty(param, key) {
+    if (!param[key]) {
+      var errconf = this.buildErrorConfig(ERROR_CONF.PARAM_ERR, ERROR_CONF.PARAM_ERR_MSG + key + '参数格式有误');
+      param.fail(errconf);
+      param.complete(errconf);
+      return true;
+    }
+    return false;
+  },
+
+  /**
+      * 验证参数中是否存在检索词keyword
+      * 
+      * @param {Object} param 接口参数
+      */
+  checkKeyword: function checkKeyword(param) {
+    return !this.checkParamKeyEmpty(param, 'keyword');
+  },
+
+  /**
+      * 验证location值
+      * 
+      * @param {Object} param 接口参数
+      */
+  checkLocation: function checkLocation(param) {
+    var location = this.getLocationParam(param.location);
+    if (!location || !location.latitude || !location.longitude) {
+      var errconf = this.buildErrorConfig(ERROR_CONF.PARAM_ERR, ERROR_CONF.PARAM_ERR_MSG + ' location参数格式有误');
+      param.fail(errconf);
+      param.complete(errconf);
+      return false;
+    }
+    return true;
+  },
+
+  /**
+      * 构造错误数据结构
+      * @param {Number} errCode 错误码
+      * @param {Number} errMsg 错误描述
+      */
+  buildErrorConfig: function buildErrorConfig(errCode, errMsg) {
+    return {
+      status: errCode,
+      message: errMsg };
+
+  },
+
+  /**
+      * 构造微信请求参数，公共属性处理
+      * 
+      * @param {Object} param 接口参数
+      * @param {Object} param 配置项
+      */
+  buildWxRequestConfig: function buildWxRequestConfig(param, options) {
+    var that = this;
+    options.header = { "content-type": "application/json" };
+    options.method = 'GET';
+    options.success = function (res) {
+      var data = res.data;
+      if (data.status === 0) {
+        param.success(data);
+      } else {
+        param.fail(data);
+      }
+    };
+    options.fail = function (res) {
+      res.statusCode = ERROR_CONF.WX_ERR_CODE;
+      param.fail(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, result.errMsg));
+    };
+    options.complete = function (res) {
+      var statusCode = +res.statusCode;
+      switch (statusCode) {
+        case ERROR_CONF.WX_ERR_CODE:{
+            param.complete(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
+            break;
+          }
+        case ERROR_CONF.WX_OK_CODE:{
+            var data = res.data;
+            if (data.status === 0) {
+              param.complete(data);
+            } else {
+              param.complete(that.buildErrorConfig(data.status, data.message));
+            }
+            break;
+          }
+        default:{
+            param.complete(that.buildErrorConfig(ERROR_CONF.SYSTEM_ERR, ERROR_CONF.SYSTEM_ERR_MSG));
+          }}
+
+
+    };
+    return options;
+  },
+
+  /**
+      * 处理用户参数是否传入坐标进行不同的处理
+      */
+  locationProcess: function locationProcess(param, locationsuccess, locationfail, locationcomplete) {
+    var that = this;
+    locationfail = locationfail || function (res) {
+      res.statusCode = ERROR_CONF.WX_ERR_CODE;
+      param.fail(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
+    };
+    locationcomplete = locationcomplete || function (res) {
+      if (res.statusCode == ERROR_CONF.WX_ERR_CODE) {
+        param.complete(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
+      }
+    };
+    if (!param.location) {
+      that.getWXLocation(locationsuccess, locationfail, locationcomplete);
+    } else if (that.checkLocation(param)) {
+      var location = Utils.getLocationParam(param.location);
+      locationsuccess(location);
+    }
+  } };var
+
+
+
+QQMapWX = /*#__PURE__*/function () {
+
+  /**
+                                     * 构造函数
+                                     * 
+                                     * @param {Object} options 接口参数,key 为必选参数
+                                     */
+  function QQMapWX(options) {_classCallCheck(this, QQMapWX);
+    if (!options.key) {
+      throw Error('key值不能为空');
+    }
+    this.key = options.key;
+  }
+
+  /**
+     * POI周边检索
+     *
+     * @param {Object} options 接口参数对象
+     * 
+     * 参数对象结构可以参考
+     * @see http://lbs.qq.com/webservice_v1/guide-search.html
+     */_createClass(QQMapWX, [{ key: "search", value: function search(
+    options) {
+      var that = this;
+      options = options || {};
+
+      Utils.polyfillParam(options);
+
+      if (!Utils.checkKeyword(options)) {
+        return;
+      }
+
+      var requestParam = {
+        keyword: options.keyword,
+        orderby: options.orderby || '_distance',
+        page_size: options.page_size || 10,
+        page_index: options.page_index || 1,
+        output: 'json',
+        key: that.key };
+
+
+      if (options.address_format) {
+        requestParam.address_format = options.address_format;
+      }
+
+      if (options.filter) {
+        requestParam.filter = options.filter;
+      }
+
+      var distance = options.distance || "1000";
+      var auto_extend = options.auto_extend || 1;
+
+      var locationsuccess = function locationsuccess(result) {
+        requestParam.boundary = "nearby(" + result.latitude + "," + result.longitude + "," + distance + "," + auto_extend + ")";
+        wx.request(Utils.buildWxRequestConfig(options, {
+          url: URL_SEARCH,
+          data: requestParam }));
+
+      };
+      Utils.locationProcess(options, locationsuccess);
+    }
+
+    /**
+       * sug模糊检索
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 参数对象结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-suggestion.html
+       */ }, { key: "getSuggestion", value: function getSuggestion(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+
+      if (!Utils.checkKeyword(options)) {
+        return;
+      }
+
+      var requestParam = {
+        keyword: options.keyword,
+        region: options.region || '全国',
+        region_fix: options.region_fix || 0,
+        policy: options.policy || 0,
+        output: 'json',
+        key: that.key };
+
+      wx.request(Utils.buildWxRequestConfig(options, {
+        url: URL_SUGGESTION,
+        data: requestParam }));
+
+    }
+
+    /**
+       * 逆地址解析
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 请求参数结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-gcoder.html
+       */ }, { key: "reverseGeocoder", value: function reverseGeocoder(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+      var requestParam = {
+        coord_type: options.coord_type || 5,
+        get_poi: options.get_poi || 0,
+        output: 'json',
+        key: that.key };
+
+      if (options.poi_options) {
+        requestParam.poi_options = options.poi_options;
+      }
+
+      var locationsuccess = function locationsuccess(result) {
+        requestParam.location = result.latitude + ',' + result.longitude;
+        wx.request(Utils.buildWxRequestConfig(options, {
+          url: URL_GET_GEOCODER,
+          data: requestParam }));
+
+      };
+      Utils.locationProcess(options, locationsuccess);
+    }
+
+    /**
+       * 地址解析
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 请求参数结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-geocoder.html
+       */ }, { key: "geocoder", value: function geocoder(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+
+      if (Utils.checkParamKeyEmpty(options, 'address')) {
+        return;
+      }
+
+      var requestParam = {
+        address: options.address,
+        output: 'json',
+        key: that.key };
+
+
+      wx.request(Utils.buildWxRequestConfig(options, {
+        url: URL_GET_GEOCODER,
+        data: requestParam }));
+
+    }
+
+
+    /**
+       * 获取城市列表
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 请求参数结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-region.html
+       */ }, { key: "getCityList", value: function getCityList(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+      var requestParam = {
+        output: 'json',
+        key: that.key };
+
+
+      wx.request(Utils.buildWxRequestConfig(options, {
+        url: URL_CITY_LIST,
+        data: requestParam }));
+
+    }
+
+    /**
+       * 获取对应城市ID的区县列表
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 请求参数结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-region.html
+       */ }, { key: "getDistrictByCityId", value: function getDistrictByCityId(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+
+      if (Utils.checkParamKeyEmpty(options, 'id')) {
+        return;
+      }
+
+      var requestParam = {
+        id: options.id || '',
+        output: 'json',
+        key: that.key };
+
+
+      wx.request(Utils.buildWxRequestConfig(options, {
+        url: URL_AREA_LIST,
+        data: requestParam }));
+
+    }
+
+    /**
+       * 用于单起点到多终点的路线距离(非直线距离)计算：
+       * 支持两种距离计算方式：步行和驾车。
+       * 起点到终点最大限制直线距离10公里。
+       *
+       * @param {Object} options 接口参数对象
+       * 
+       * 请求参数结构可以参考
+       * http://lbs.qq.com/webservice_v1/guide-distance.html
+       */ }, { key: "calculateDistance", value: function calculateDistance(
+    options) {
+      var that = this;
+      options = options || {};
+      Utils.polyfillParam(options);
+
+      if (Utils.checkParamKeyEmpty(options, 'to')) {
+        return;
+      }
+
+      var requestParam = {
+        mode: options.mode || 'walking',
+        to: Utils.location2query(options.to),
+        output: 'json',
+        key: that.key };
+
+
+      var locationsuccess = function locationsuccess(result) {
+        requestParam.from = result.latitude + ',' + result.longitude;
+        wx.request(Utils.buildWxRequestConfig(options, {
+          url: URL_DISTANCE,
+          data: requestParam }));
+
+      };
+      if (options.from) {
+        options.location = options.from;
+      }
+
+      Utils.locationProcess(options, locationsuccess);
+    } }]);return QQMapWX;}();
+
+
+module.exports = QQMapWX;
+
+/***/ }),
+
+/***/ 29:
+/*!*****************************************!*\
+  !*** E:/项萍/熙美小程序12/common/ajax/ajax.js ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(uni) {Object.defineProperty(exports, "__esModule", { value: true });exports.ajax = exports.getSecret = void 0;var _env = __webpack_require__(/*! ./env.js */ 18);
+var _md = _interopRequireDefault(__webpack_require__(/*! @/common/utils/md5.js */ 12));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
+var getSecret = function getSecret() {
+  var timestamp = new Date().getTime();
+  var secret = _md.default.hex_md5("XM#" + _md.default.hex_md5(String(timestamp)) + "@secret");
+  console.log(secret);
+  return {
+    'timestamp': timestamp,
+    'secret': secret };
+
+};exports.getSecret = getSecret;
+
+var ajax = function ajax(opt) {
+  opt = opt || {};
+  opt.url = opt.url || '';
+  opt.data = opt.data || null;
+  opt.method = opt.method || 'GET';
+  opt.header = opt.header || {
+    "Content-Type": "application/x-www-form-urlencoded" };
+
+  opt.success = opt.success || function () {};
+
+  uni.request({
+    url: _env.ApiUrl + opt.url,
+    data: opt.data,
+    method: opt.method,
+    header: opt.header,
+    dataType: 'json',
+    success: function success(res) {
+      opt.success(res);
+    },
+    fail: function fail() {
+      uni.showToast({
+        title: '请稍后重试' });
+
+    } });
+
+};exports.ajax = ajax;
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 1)["default"]))
+
+/***/ }),
+
+/***/ 3:
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+
+/***/ 344:
 /*!***********************************************************************!*\
-  !*** D:/work/熙美小程序/components/mpvue-citypicker/city-data/province.js ***!
+  !*** E:/项萍/熙美小程序12/components/mpvue-citypicker/city-data/province.js ***!
   \***********************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -10815,9 +11444,9 @@ provinceData;exports.default = _default;
 
 /***/ }),
 
-/***/ 258:
+/***/ 345:
 /*!*******************************************************************!*\
-  !*** D:/work/熙美小程序/components/mpvue-citypicker/city-data/city.js ***!
+  !*** E:/项萍/熙美小程序12/components/mpvue-citypicker/city-data/city.js ***!
   \*******************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -12329,9 +12958,9 @@ cityData;exports.default = _default;
 
 /***/ }),
 
-/***/ 259:
+/***/ 346:
 /*!*******************************************************************!*\
-  !*** D:/work/熙美小程序/components/mpvue-citypicker/city-data/area.js ***!
+  !*** E:/项萍/熙美小程序12/components/mpvue-citypicker/city-data/area.js ***!
   \*******************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -24882,563 +25511,9 @@ areaData;exports.default = _default;
 
 /***/ }),
 
-/***/ 28:
-/*!********************************************************!*\
-  !*** D:/work/熙美小程序/common/utils/qqmap-wx-jssdk.min.js ***!
-  \********************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-function _classCallCheck(instance, Constructor) {if (!(instance instanceof Constructor)) {throw new TypeError("Cannot call a class as a function");}}function _defineProperties(target, props) {for (var i = 0; i < props.length; i++) {var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);}}function _createClass(Constructor, protoProps, staticProps) {if (protoProps) _defineProperties(Constructor.prototype, protoProps);if (staticProps) _defineProperties(Constructor, staticProps);return Constructor;} /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * 微信小程序JavaScriptSDK
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @version 1.0
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @date 2017-01-10
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            * @author jaysonzhou@tencent.com
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
-
-var ERROR_CONF = {
-  KEY_ERR: 311,
-  KEY_ERR_MSG: 'key格式错误',
-  PARAM_ERR: 310,
-  PARAM_ERR_MSG: '请求参数信息有误',
-  SYSTEM_ERR: 600,
-  SYSTEM_ERR_MSG: '系统错误',
-  WX_ERR_CODE: 1000,
-  WX_OK_CODE: 200 };
-
-var BASE_URL = 'https://apis.map.qq.com/ws/';
-var URL_SEARCH = BASE_URL + 'place/v1/search';
-var URL_SUGGESTION = BASE_URL + 'place/v1/suggestion';
-var URL_GET_GEOCODER = BASE_URL + 'geocoder/v1/';
-var URL_CITY_LIST = BASE_URL + 'district/v1/list';
-var URL_AREA_LIST = BASE_URL + 'district/v1/getchildren';
-var URL_DISTANCE = BASE_URL + 'distance/v1/';
-var Utils = {
-  /**
-               * 得到终点query字符串
-               * @param {Array|String} 检索数据
-               */
-  location2query: function location2query(data) {
-    if (typeof data == 'string') {
-      return data;
-    }
-    var query = '';
-    for (var i = 0; i < data.length; i++) {
-      var d = data[i];
-      if (!!query) {
-        query += ';';
-      }
-      if (d.location) {
-        query = query + d.location.lat + ',' + d.location.lng;
-      }
-      if (d.latitude && d.longitude) {
-        query = query + d.latitude + ',' + d.longitude;
-      }
-    }
-    return query;
-  },
-
-  /**
-      * 使用微信接口进行定位
-      */
-  getWXLocation: function getWXLocation(success, fail, complete) {
-    wx.getLocation({
-      type: 'gcj02',
-      success: success,
-      fail: fail,
-      complete: complete });
-
-  },
-
-  /**
-      * 获取location参数
-      */
-  getLocationParam: function getLocationParam(location) {
-    if (typeof location == 'string') {
-      var locationArr = location.split(',');
-      if (locationArr.length === 2) {
-        location = {
-          latitude: location.split(',')[0],
-          longitude: location.split(',')[1] };
-
-      } else {
-        location = {};
-      }
-    }
-    return location;
-  },
-
-  /**
-      * 回调函数默认处理
-      */
-  polyfillParam: function polyfillParam(param) {
-    param.success = param.success || function () {};
-    param.fail = param.fail || function () {};
-    param.complete = param.complete || function () {};
-  },
-
-  /**
-      * 验证param对应的key值是否为空
-      * 
-      * @param {Object} param 接口参数
-      * @param {String} key 对应参数的key
-      */
-  checkParamKeyEmpty: function checkParamKeyEmpty(param, key) {
-    if (!param[key]) {
-      var errconf = this.buildErrorConfig(ERROR_CONF.PARAM_ERR, ERROR_CONF.PARAM_ERR_MSG + key + '参数格式有误');
-      param.fail(errconf);
-      param.complete(errconf);
-      return true;
-    }
-    return false;
-  },
-
-  /**
-      * 验证参数中是否存在检索词keyword
-      * 
-      * @param {Object} param 接口参数
-      */
-  checkKeyword: function checkKeyword(param) {
-    return !this.checkParamKeyEmpty(param, 'keyword');
-  },
-
-  /**
-      * 验证location值
-      * 
-      * @param {Object} param 接口参数
-      */
-  checkLocation: function checkLocation(param) {
-    var location = this.getLocationParam(param.location);
-    if (!location || !location.latitude || !location.longitude) {
-      var errconf = this.buildErrorConfig(ERROR_CONF.PARAM_ERR, ERROR_CONF.PARAM_ERR_MSG + ' location参数格式有误');
-      param.fail(errconf);
-      param.complete(errconf);
-      return false;
-    }
-    return true;
-  },
-
-  /**
-      * 构造错误数据结构
-      * @param {Number} errCode 错误码
-      * @param {Number} errMsg 错误描述
-      */
-  buildErrorConfig: function buildErrorConfig(errCode, errMsg) {
-    return {
-      status: errCode,
-      message: errMsg };
-
-  },
-
-  /**
-      * 构造微信请求参数，公共属性处理
-      * 
-      * @param {Object} param 接口参数
-      * @param {Object} param 配置项
-      */
-  buildWxRequestConfig: function buildWxRequestConfig(param, options) {
-    var that = this;
-    options.header = { "content-type": "application/json" };
-    options.method = 'GET';
-    options.success = function (res) {
-      var data = res.data;
-      if (data.status === 0) {
-        param.success(data);
-      } else {
-        param.fail(data);
-      }
-    };
-    options.fail = function (res) {
-      res.statusCode = ERROR_CONF.WX_ERR_CODE;
-      param.fail(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, result.errMsg));
-    };
-    options.complete = function (res) {
-      var statusCode = +res.statusCode;
-      switch (statusCode) {
-        case ERROR_CONF.WX_ERR_CODE:{
-            param.complete(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
-            break;
-          }
-        case ERROR_CONF.WX_OK_CODE:{
-            var data = res.data;
-            if (data.status === 0) {
-              param.complete(data);
-            } else {
-              param.complete(that.buildErrorConfig(data.status, data.message));
-            }
-            break;
-          }
-        default:{
-            param.complete(that.buildErrorConfig(ERROR_CONF.SYSTEM_ERR, ERROR_CONF.SYSTEM_ERR_MSG));
-          }}
-
-
-    };
-    return options;
-  },
-
-  /**
-      * 处理用户参数是否传入坐标进行不同的处理
-      */
-  locationProcess: function locationProcess(param, locationsuccess, locationfail, locationcomplete) {
-    var that = this;
-    locationfail = locationfail || function (res) {
-      res.statusCode = ERROR_CONF.WX_ERR_CODE;
-      param.fail(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
-    };
-    locationcomplete = locationcomplete || function (res) {
-      if (res.statusCode == ERROR_CONF.WX_ERR_CODE) {
-        param.complete(that.buildErrorConfig(ERROR_CONF.WX_ERR_CODE, res.errMsg));
-      }
-    };
-    if (!param.location) {
-      that.getWXLocation(locationsuccess, locationfail, locationcomplete);
-    } else if (that.checkLocation(param)) {
-      var location = Utils.getLocationParam(param.location);
-      locationsuccess(location);
-    }
-  } };var
-
-
-
-QQMapWX = /*#__PURE__*/function () {
-
-  /**
-                                     * 构造函数
-                                     * 
-                                     * @param {Object} options 接口参数,key 为必选参数
-                                     */
-  function QQMapWX(options) {_classCallCheck(this, QQMapWX);
-    if (!options.key) {
-      throw Error('key值不能为空');
-    }
-    this.key = options.key;
-  }
-
-  /**
-     * POI周边检索
-     *
-     * @param {Object} options 接口参数对象
-     * 
-     * 参数对象结构可以参考
-     * @see http://lbs.qq.com/webservice_v1/guide-search.html
-     */_createClass(QQMapWX, [{ key: "search", value: function search(
-    options) {
-      var that = this;
-      options = options || {};
-
-      Utils.polyfillParam(options);
-
-      if (!Utils.checkKeyword(options)) {
-        return;
-      }
-
-      var requestParam = {
-        keyword: options.keyword,
-        orderby: options.orderby || '_distance',
-        page_size: options.page_size || 10,
-        page_index: options.page_index || 1,
-        output: 'json',
-        key: that.key };
-
-
-      if (options.address_format) {
-        requestParam.address_format = options.address_format;
-      }
-
-      if (options.filter) {
-        requestParam.filter = options.filter;
-      }
-
-      var distance = options.distance || "1000";
-      var auto_extend = options.auto_extend || 1;
-
-      var locationsuccess = function locationsuccess(result) {
-        requestParam.boundary = "nearby(" + result.latitude + "," + result.longitude + "," + distance + "," + auto_extend + ")";
-        wx.request(Utils.buildWxRequestConfig(options, {
-          url: URL_SEARCH,
-          data: requestParam }));
-
-      };
-      Utils.locationProcess(options, locationsuccess);
-    }
-
-    /**
-       * sug模糊检索
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 参数对象结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-suggestion.html
-       */ }, { key: "getSuggestion", value: function getSuggestion(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-
-      if (!Utils.checkKeyword(options)) {
-        return;
-      }
-
-      var requestParam = {
-        keyword: options.keyword,
-        region: options.region || '全国',
-        region_fix: options.region_fix || 0,
-        policy: options.policy || 0,
-        output: 'json',
-        key: that.key };
-
-      wx.request(Utils.buildWxRequestConfig(options, {
-        url: URL_SUGGESTION,
-        data: requestParam }));
-
-    }
-
-    /**
-       * 逆地址解析
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 请求参数结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-gcoder.html
-       */ }, { key: "reverseGeocoder", value: function reverseGeocoder(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-      var requestParam = {
-        coord_type: options.coord_type || 5,
-        get_poi: options.get_poi || 0,
-        output: 'json',
-        key: that.key };
-
-      if (options.poi_options) {
-        requestParam.poi_options = options.poi_options;
-      }
-
-      var locationsuccess = function locationsuccess(result) {
-        requestParam.location = result.latitude + ',' + result.longitude;
-        wx.request(Utils.buildWxRequestConfig(options, {
-          url: URL_GET_GEOCODER,
-          data: requestParam }));
-
-      };
-      Utils.locationProcess(options, locationsuccess);
-    }
-
-    /**
-       * 地址解析
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 请求参数结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-geocoder.html
-       */ }, { key: "geocoder", value: function geocoder(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-
-      if (Utils.checkParamKeyEmpty(options, 'address')) {
-        return;
-      }
-
-      var requestParam = {
-        address: options.address,
-        output: 'json',
-        key: that.key };
-
-
-      wx.request(Utils.buildWxRequestConfig(options, {
-        url: URL_GET_GEOCODER,
-        data: requestParam }));
-
-    }
-
-
-    /**
-       * 获取城市列表
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 请求参数结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-region.html
-       */ }, { key: "getCityList", value: function getCityList(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-      var requestParam = {
-        output: 'json',
-        key: that.key };
-
-
-      wx.request(Utils.buildWxRequestConfig(options, {
-        url: URL_CITY_LIST,
-        data: requestParam }));
-
-    }
-
-    /**
-       * 获取对应城市ID的区县列表
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 请求参数结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-region.html
-       */ }, { key: "getDistrictByCityId", value: function getDistrictByCityId(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-
-      if (Utils.checkParamKeyEmpty(options, 'id')) {
-        return;
-      }
-
-      var requestParam = {
-        id: options.id || '',
-        output: 'json',
-        key: that.key };
-
-
-      wx.request(Utils.buildWxRequestConfig(options, {
-        url: URL_AREA_LIST,
-        data: requestParam }));
-
-    }
-
-    /**
-       * 用于单起点到多终点的路线距离(非直线距离)计算：
-       * 支持两种距离计算方式：步行和驾车。
-       * 起点到终点最大限制直线距离10公里。
-       *
-       * @param {Object} options 接口参数对象
-       * 
-       * 请求参数结构可以参考
-       * http://lbs.qq.com/webservice_v1/guide-distance.html
-       */ }, { key: "calculateDistance", value: function calculateDistance(
-    options) {
-      var that = this;
-      options = options || {};
-      Utils.polyfillParam(options);
-
-      if (Utils.checkParamKeyEmpty(options, 'to')) {
-        return;
-      }
-
-      var requestParam = {
-        mode: options.mode || 'walking',
-        to: Utils.location2query(options.to),
-        output: 'json',
-        key: that.key };
-
-
-      var locationsuccess = function locationsuccess(result) {
-        requestParam.from = result.latitude + ',' + result.longitude;
-        wx.request(Utils.buildWxRequestConfig(options, {
-          url: URL_DISTANCE,
-          data: requestParam }));
-
-      };
-      if (options.from) {
-        options.location = options.from;
-      }
-
-      Utils.locationProcess(options, locationsuccess);
-    } }]);return QQMapWX;}();
-
-
-module.exports = QQMapWX;
-
-/***/ }),
-
-/***/ 29:
-/*!*****************************************!*\
-  !*** D:/work/熙美小程序/common/ajax/ajax.js ***!
-  \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(uni) {Object.defineProperty(exports, "__esModule", { value: true });exports.ajax = exports.getSecret = void 0;var _env = __webpack_require__(/*! ./env.js */ 18);
-var _md = _interopRequireDefault(__webpack_require__(/*! @/common/utils/md5.js */ 12));function _interopRequireDefault(obj) {return obj && obj.__esModule ? obj : { default: obj };}
-var getSecret = function getSecret() {
-  var timestamp = new Date().getTime();
-  var secret = _md.default.hex_md5("XM#" + _md.default.hex_md5(String(timestamp)) + "@secret");
-  console.log(secret);
-  return {
-    'timestamp': timestamp,
-    'secret': secret };
-
-};exports.getSecret = getSecret;
-
-var ajax = function ajax(opt) {
-  opt = opt || {};
-  opt.url = opt.url || '';
-  opt.data = opt.data || null;
-  opt.method = opt.method || 'GET';
-  opt.header = opt.header || {
-    "Content-Type": "application/x-www-form-urlencoded" };
-
-  opt.success = opt.success || function () {};
-
-  uni.request({
-    url: _env.ApiUrl + opt.url,
-    data: opt.data,
-    method: opt.method,
-    header: opt.header,
-    dataType: 'json',
-    success: function success(res) {
-      opt.success(res);
-    },
-    fail: function fail() {
-      uni.showToast({
-        title: '请稍后重试' });
-
-    } });
-
-};exports.ajax = ajax;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 1)["default"]))
-
-/***/ }),
-
-/***/ 3:
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-
 /***/ 4:
 /*!********************************!*\
-  !*** D:/work/熙美小程序/pages.json ***!
+  !*** E:/项萍/熙美小程序12/pages.json ***!
   \********************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -26348,19 +26423,19 @@ module.exports = {"_from":"@dcloudio/uni-stat@alpha","_id":"@dcloudio/uni-stat@2
 
 /***/ 7:
 /*!*************************************************!*\
-  !*** D:/work/熙美小程序/pages.json?{"type":"style"} ***!
+  !*** E:/项萍/熙美小程序12/pages.json?{"type":"style"} ***!
   \*************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _default = { "pages": { "pages/index/index": { "navigationBarTitleText": "", "enablePullDownRefresh": true, "onReachBottomDistance": 50 }, "pages/search/search/search": { "navigationBarTitleText": "搜索", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTextStyle": "black" }, "pages/activity/activity": { "navigationBarTitleText": "组合套餐", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTextStyle": "black" }, "pages/tabBar/category/category": { "navigationBarTextStyle": "black", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTitleText": "商品分类", "enablePullDownRefresh": true, "onReachBottomDistance": 50 }, "pages/pet/pet/pet": { "navigationBarTextStyle": "black", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTitleText": "宠物系列" }, "pages/tabBar/cart/cart": { "enablePullDownRefresh": true, "navigationBarTextStyle": "black", "navigationBarTitleText": "购物车", "onReachBottomDistance": 50 }, "pages/tabBar/user/user": { "enablePullDownRefresh": true, "navigationBarTitleText": "会员中心", "navigationBarTextStyle": "black" }, "pages/user/keep/keep": { "navigationBarTitleText": "我的收藏", "navigationBarBackgroundColor": "#f06c7a", "navigationBarTextStyle": "white" }, "pages/user/coupon/coupon": { "navigationBarTitleText": "优惠券", "navigationBarBackgroundColor": "#f06c7a", "navigationBarTextStyle": "white" }, "pages/user/address/address": { "navigationBarBackgroundColor": "#ffffff", "navigationBarTitleText": "地址管理", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/user/address/edit/edit": { "navigationBarBackgroundColor": "#ffffff", "navigationBarTitleText": "编辑收件人地址", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/user/order_list/order_list": { "navigationBarTitleText": "我的订单", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/order/confirmation": { "navigationBarTitleText": "确认订单" }, "pages/user/order_list/orderDtl/orderDtl": { "navigationBarTitleText": "订单详情", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/user/order_list/orderEdit/orderEdit": { "navigationBarTitleText": "订单详情", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/goods/goods-list/goods-list": { "navigationBarTitleText": "", "enablePullDownRefresh": true }, "pages/goods/goods": { "navigationBarTitleText": "商品详情", "navigationBarBackgroundColor": "#f1f1f1", "onReachBottomDistance": 50 }, "pages/goods/ratings/ratings": { "navigationBarTitleText": "商品评论", "enablePullDownRefresh": true, "onReachBottomDistance": 50, "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/store/store/store": { "navigationBarTitleText": "选择门店", "navigationBarBackgroundColor": "#FFFFFF" }, "pages/webViwe/webViwe/webViwe": {}, "pages/parse/parse/parse": {}, "pages/seckill/seckill/seckill": { "navigationBarTitleText": "限时抢购", "navigationBarBackgroundColor": "#FFFFFF" } }, "globalStyle": { "navigationBarTextStyle": "black", "navigationBarTitleText": "", "navigationBarBackgroundColor": "#ffffff", "backgroundColor": "#ffffff", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" } };exports.default = _default;
+Object.defineProperty(exports, "__esModule", { value: true });exports.default = void 0;var _default = { "pages": { "pages/index/index": { "navigationBarTitleText": "", "enablePullDownRefresh": true, "onReachBottomDistance": 50 }, "pages/search/search/search": { "navigationBarTitleText": "搜索", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTextStyle": "black" }, "pages/activity/activity": { "navigationBarTitleText": "组合套餐", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTextStyle": "black" }, "pages/tabBar/category/category": { "navigationBarTextStyle": "black", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTitleText": "商品分类", "onReachBottomDistance": 50 }, "pages/pet/pet/pet": { "navigationBarTextStyle": "black", "navigationBarBackgroundColor": "#FFFFFF", "navigationBarTitleText": "宠物系列" }, "pages/tabBar/cart/cart": { "enablePullDownRefresh": true, "navigationBarTextStyle": "black", "navigationBarTitleText": "购物车", "onReachBottomDistance": 50 }, "pages/tabBar/user/user": { "enablePullDownRefresh": true, "navigationBarTitleText": "会员中心", "navigationBarTextStyle": "black" }, "pages/user/keep/keep": { "navigationBarTitleText": "我的收藏", "navigationBarBackgroundColor": "#f06c7a", "navigationBarTextStyle": "white" }, "pages/user/coupon/coupon": { "navigationBarTitleText": "优惠券", "navigationBarBackgroundColor": "#f06c7a", "navigationBarTextStyle": "white" }, "pages/user/address/address": { "navigationBarBackgroundColor": "#ffffff", "navigationBarTitleText": "地址管理", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/user/address/edit/edit": { "navigationBarBackgroundColor": "#ffffff", "navigationBarTitleText": "编辑收件人地址", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/user/order_list/order_list": { "navigationBarTitleText": "我的订单", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/order/confirmation": { "navigationBarTitleText": "确认订单" }, "pages/user/order_list/orderDtl/orderDtl": { "navigationBarTitleText": "订单详情", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/user/order_list/orderEdit/orderEdit": { "navigationBarTitleText": "修改地址", "navigationBarBackgroundColor": "#f8f8f8", "backgroundColorTop": "#f3f3f3", "backgroundColorBottom": "#ffffff" }, "pages/goods/goods-list/goods-list": { "navigationBarTitleText": "", "enablePullDownRefresh": true }, "pages/goods/goods": { "navigationBarTitleText": "商品详情", "navigationBarBackgroundColor": "#f1f1f1", "onReachBottomDistance": 50 }, "pages/goods/ratings/ratings": { "navigationBarTitleText": "商品评论", "enablePullDownRefresh": true, "onReachBottomDistance": 50, "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" }, "pages/store/store/store": { "navigationBarTitleText": "选择门店", "navigationBarBackgroundColor": "#FFFFFF" }, "pages/webViwe/webViwe/webViwe": {}, "pages/parse/parse/parse": {}, "pages/seckill/seckill/seckill": { "navigationBarTitleText": "限时抢购", "navigationBarBackgroundColor": "#FFFFFF" }, "pages/logisticsTrack/track": { "navigationBarTitleText": "物流跟踪" }, "pages/user/order_list/refund/refund": { "navigationBarTitleText": "选择服务类型" }, "pages/user/order_list/refund/money/money": { "navigationBarTitleText": "申请退款" }, "pages/user/order_list/refund/refundGood/refundGood": { "navigationBarTitleText": "申请退货退款" }, "pages/user/order_list/refund/barter/barter": { "navigationBarTitleText": "申请换货" }, "pages/goods/goods-list/product/product": {}, "pages/seckill/join/join": { "navigationBarTitleText": "邀请" }, "pages/seckill/group/group": { "navigationBarTitleText": "拼团" }, "pages/seckill/bargain/bargain": { "navigationBarTitleText": "砍价0元购" }, "pages/seckill/bargain/cut": { "navigationBarTitleText": "砍价0元拿", "enablePullDownRefresh": true } }, "globalStyle": { "navigationBarTextStyle": "black", "navigationBarTitleText": "", "navigationBarBackgroundColor": "#ffffff", "backgroundColor": "#ffffff", "backgroundColorTop": "#ffffff", "backgroundColorBottom": "#ffffff" } };exports.default = _default;
 
 /***/ }),
 
 /***/ 8:
 /*!************************************************!*\
-  !*** D:/work/熙美小程序/pages.json?{"type":"stat"} ***!
+  !*** E:/项萍/熙美小程序12/pages.json?{"type":"stat"} ***!
   \************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {

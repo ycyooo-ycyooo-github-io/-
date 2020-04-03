@@ -3,7 +3,6 @@
 		<!-- 状态栏 -->
 		<view class="status" :style="{position:headerPosition}"></view>
 		<view class="header" :style="{position:headerPosition}">
-			<!-- logo -->
 			<view class="addr">
 				<image src="../../../static/img/logo.png" mode="" class="logo"></image>
 			</view>
@@ -11,26 +10,30 @@
 				<input placeholder="熙美诚品" placeholder-style="color:#c0c0c0;" @tap="toSearch()" />
 				<view class="icon search"></view>
 			</view>
-			<!-- <view class="icon-btn">
-				<view class="icon tongzhi" @tap="toMsg"></view>
-			</view> -->
 		</view>
 		<!-- 占位 -->
 		<view class="place"></view>
 		<view class="category-list">
 			<!-- 左侧分类导航 -->
 			<scroll-view scroll-y="true" class="left">
-				<view class="row" v-for="(category,index) in categoryList" :key="category.id" :class="[category.id==showCategoryIndex?'on':'']"
+				<view class="row" :class="[showCategoryIndex==1000?'on':'']"
+				 @tap="shownewGoods">
+					<view class="text">
+						<view class="block"></view>
+						新品推荐
+					</view>
+				</view>
+				<view class="row" v-for="(category,index) in categoryList" :key="index" :class="[category.id==showCategoryIndex?'on':'']"
 				 @tap="showCategory(category.id)">
 					<view class="text">
 						<view class="block"></view>
 						{{category.cate_name}}
 					</view>
 				</view>
-
 			</scroll-view>
 			<!-- 右侧子导航 -->
 			<scroll-view scroll-y="true" class="right" @scrolltolower="loadMore" :scroll-top="scrollTop">
+				
 				<view class="header-info">
 					<view class="cate">
 						<scroll-view scroll-x scroll-with-animation class="tab-view" :scroll-left="scrollLeft">
@@ -42,39 +45,24 @@
 								<text class="tab-bar-title">{{item.cate_name}}</text>
 							</view>
 						</scroll-view>
-						<!-- <tui-icon name="down" color="#999" size="24" class="down" @tap="isshow()"></tui-icon> -->
 					</view>
 				</view>
-				<view class="category" v-for="(category,index) in categoryList" :key="category.id" v-show="category.id==showCategoryIndex">
-					<view class="all" v-show="allShow">
-						<view class="top">
-							<text>全部分类</text>
-							<tui-icon name="up" color="#999" size="24" @tap="close()"></tui-icon>
-						</view>
-						<view class="cate-list">
-							<view class="tab-bar-item" :class="[currentTab==0 ? 'active' : '']" @tap.stop="swichall">
-								<text class="tab-bar-title">全部</text>
-							</view>
-							<view v-for="(item,index) in tabbar" :key="index" class="tab-bar-item" :class="[currentTab==item.id ? 'active' : '']"
-							 :data-current="index" @tap.stop="swichNav(item.id)">
-								<text class="tab-bar-title">{{item.cate_name}}</text>
-							</view>
-						</view>
-
+				<view class="place"></view>
+				<view class="category">
+					<view class="banner" v-show="showCategoryIndex==1000">
+						<image :src="newImg"></image>
 					</view>
-
-					<view class="place"></view>
-					<view class="banner">
-						<image :src="category.img"></image>
+					<view class="banner" v-for="(category,index) in categoryList" :key="index" v-show="category.id==showCategoryIndex">
+						<image :src="category.img" ></image>
 					</view>
-					<view class="list">
-						<view class="good-info" v-for="(item,index) in productList" :key="index" >
+					<view class="goodslist">
+						<view class="good-info" v-for="(item,index) in productList" :key="index">
 							<view class="left-info" @tap="toGoods(item)">
 								<image :src="item.pro_sn" mode=""></image>
 							</view>
 							<view class="right-info">
 								<view class="title title-two" @tap="toGoods(item)">{{item.pro_name}}</view>
-								
+					
 								<view class="price">
 									<text class="p" @tap="toGoods(item)" v-if="item.dis_price">¥{{ item.dis_price }}
 										<text class="dis_price" v-if="item.dis_price" style="font-size: 24rpx;text-decoration: line-through;">{{item.pro_price}}</text>
@@ -84,13 +72,14 @@
 										<image src="../../../static/img/tabBar/cart-on.png" mode="" class="cart" @tap="joinCart(item)"></image>
 										<text class="num" v-if="item.itemcount>0">{{item.itemcount}}</text>
 									</view>
-
+					
 								</view>
 							</view>
 						</view>
-						<view class="loading-text">{{loadingText}}</view>
 					</view>
 				</view>
+				
+				<view class="loading-text">{{loadingText}}</view>				
 			</scroll-view>
 		</view>
 	</view>
@@ -112,10 +101,10 @@
 				fid: 160,
 				mid: '',
 				small: '',
-				pageid: 1,
+				// pageid: 1,
 				secret: '',
 				timestamp: '',
-				showCategoryIndex: 160,
+				showCategoryIndex: 1000,
 				headerPosition: "fixed",
 				tabbar: [],
 				winHeight: "", //窗口高度
@@ -132,10 +121,16 @@
 				pronum: 0,
 				loadingText: '正在加载中',
 				scrollTop: 0,
+				flag: true, //记录是否请求数据的状态
+				page: 1,
+				addShow: true,
+				top: 0,
+				newImg:null
 			}
 		},
 
 		onPageScroll(e) {
+			
 			if (e.scrollTop >= 0) {
 				this.headerPosition = "fixed";
 			} else {
@@ -143,44 +138,43 @@
 			}
 		},
 
-		onLoad() {
-			this.getList()
-			var text = getSecret();
-			this.secret = text.secret;
-			this.timestamp = text.timestamp;
-			uni.getStorage({
-				key: 'user',
-				success: (res) => {
-					this.openid = res.data.openid;
-				}
-			});
+		onLoad() {			
 			this.getbig()
-
+			if(this.showCategoryIndex==1000){
+				this.getnewGoods()
+			}else{
+				this.getList()
+			}
+			
+			
 		},
 		onShow() {
-			// this.productList = [];
-			// this.getList();
-			
-			let index = uni.getStorageSync('cateSelect')
+			let index = uni.getStorageSync('cateSelect');
 			if (index) {
 				this.productList = []
-				this.fid = index;
 				this.showCategoryIndex = index;
-				this.getList();
+				this.loadingText = '正在加载中...';
+				if(index==1000){
+					this.tabbar=[];
+					this.getnewGoods()
+				}else{
+					this.fid = index;
+					this.getList();
+				}
 			}
 		},
 		onHide() {
 			uni.removeStorageSync('cateSelect');
-		},
-		methods: {
+		},		
+		methods: {			
 			loadMore() {
-				this.pageid++;
-				if (this.pageid <= this.pagecount) {
-					this.loadingText = '正在加载中...';
-					setTimeout(() => {
+				this.page++
+				if (this.page <= this.pagecount) {
+					setTimeout(()=>{
 						this.getgoodList();
-						this.scrollTop = 0;
-					}, 1000);
+					},2000)
+					
+					this.loadingText = '正在加载中...';
 				} else {
 					this.loadingText = '到底了';
 				}
@@ -193,7 +187,7 @@
 					this.currentTab = e
 				}
 				this.mid = e;
-				this.pageid = 1;
+				this.page = 1;
 				this.productList = [];
 				this.getgoodList();
 			},
@@ -203,61 +197,58 @@
 			close() {
 				this.allShow = false;
 			},
-			swichall() {				
+			swichall() {
 				this.mid = '';
 				this.currentTab = 0;
-				this.pageid = 1;
+				this.page = 1;
 				this.productList = [];
 				this.getgoodList();
 			},
 			// 获取分类商品
 			getList() {
-				let data={
+				let data = {
 					fid: this.fid
 				}
-				this.$xm.post('/Procate/getMid',data,(res)=>{
-					console.log(res);
+				this.$xm.post('/Procate/getMid', data, (res) => {
 					this.tabbar = res;
 					this.getgoodList()
 				})
-				
+
 			},
 			// 获取商品总分类
 			getbig() {
-				this.$xm.post('/Procate/getBig','',(res)=>{
-					console.log(res);
+				this.$xm.post('/Procate/getBig', '', (res) => {
 					this.categoryList = res;
 				})
-				
+
 			},
 			// 获取商品
-			getgoodList() {				
-				let data={
+			getgoodList() {
+				this.flag = false;
+				let data = {
 					big: this.fid,
 					mid: this.mid,
 					small: this.small,
-					pageid: this.pageid
+					pageid: this.page
 				}
-				this.$xm.post('/Product/proList',data,(res)=>{
+				this.$xm.post('/Product/proList', data, (res) => {
 					let result = res.prolist;
-					if(res.prolist.length==0){
-						this.loadingText='没有更多商品！'
-					}else{
-						this.loadingText='正在加载中...'
+					if (res.prolist.length == 0 || res.count==1) {
+						this.loadingText = '没有更多商品了！'
+					} else {
+						this.loadingText = '正在加载中...'
 					}
 					result.map((ele) => {
 						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300'
-						// if (ele.pro_name.length > 15) {
-						// 	ele.pro_name = ele.pro_name.slice(0, 1) + '...'
-						// }
 						ele.itemcount = 0;
-						
+
 					})
+					this.pagecount = res.count;
 					this.productList = this.productList.concat(result);
-					this.pagecount = res.count;					
+
 					console.log(this.productList)
 				})
-				
+
 			},
 			//分类切换显示
 			showCategory(index) {
@@ -267,8 +258,39 @@
 				this.fid = index;
 				this.currentTab = 0;
 				this.mid = '';
-				this.pageid = 1;
+				this.page = 1;
+				this.newImg=null;
 				this.getList()
+			},
+			// 新品推荐
+			shownewGoods(){
+				this.loadingText = '正在加载中...';
+				this.productList = [];
+				this.showCategoryIndex = 1000;
+				this.page = 1;
+				this.tabbar=[];
+				this.getnewGoods()
+			},
+			getnewGoods(){
+				let data={
+					p:this.page
+				}
+				this.$xm.post('/Index/newpro',data,(res)=>{
+					console.log(res);
+					this.pagecount=Number(res.p);
+					if (this.pagecount==1) {
+						this.loadingText = '到底了！'
+					} else {
+						this.loadingText = '正在加载中...'
+					}
+					res.data.forEach(ele=>{
+						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300'
+						ele.itemcount = 0;
+					})
+					this.productList = this.productList.concat(res.data);
+					this.newImg=res.img;
+					console.log(this.newImg);
+				})
 			},
 			//商品跳转
 			toGoods(e) {
@@ -277,20 +299,29 @@
 				});
 			},
 			// 加入购物车
-			joinCart(e) {				
-				e.itemcount++;
+			joinCart(e) {
+				if (this.addShow) {
+					e.itemcount++;
+				}
 				let data = {
 					proid: e.id,
-					pronum: 1			
+					pronum: 1
 				};
-				this.$xm.post('/Cart/add',data, (res) => {
+				this.$xm.post('/Cart/add', data, (res) => {
 					let result = res.msg;
-					if (result == '加入购物车成功') {
+					if (res.s == 1) {
+						this.addShow = true;
 						uni.showToast({
-							title: "已加入购物车"
+							title: result
+						});
+					} else if (res.s == 0) {
+						this.addShow = false;
+						uni.showToast({
+							title: result,
+							icon: 'none'
 						});
 					}
-				})				
+				})
 			},
 			//搜索跳转
 			toSearch() {
@@ -407,7 +438,8 @@
 		.left,
 		.right {
 			position: absolute;
-			top: 70upx;
+
+			top: 100upx;
 			/*  #ifdef  APP-PLUS  */
 			top: calc(100upx + var(--status-bar-height));
 			/*  #endif  */
@@ -463,6 +495,38 @@
 		.right {
 			width: 76%;
 			left: 24%;
+			.tui-scroll-top {
+				bottom: 120rpx;
+				right: 24rpx;
+				width: 76rpx;
+				height: 76rpx;
+				background: rgba(255, 255, 255, .98);
+				border: 1rpx solid #BCBCBC;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border-radius: 50%;
+				position: fixed;
+				z-index: 999999;
+				/* -webkit-transform: translateZ(0);
+				transform: translateZ(0); */
+				/* -webkit-overflow-scroll: touch; */
+				.tui-scroll-top-img {
+					width: 48rpx;
+					height: 48rpx;
+					display: block;
+				}
+			}		
+			
+			.loading-text {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 60upx;
+				color: #979797;
+				font-size: 24upx;
+			}
 
 			.header-info {
 				padding: 15upx 0;
@@ -470,6 +534,7 @@
 				position: fixed;
 				width: 100%;
 				z-index: 100;
+				padding-top: 0;
 				.cate {
 					display: flex;
 					justify-content: space-between;
@@ -532,93 +597,32 @@
 				}
 			}
 
+			.place {
+				background-color: #ffffff;
+				height: 80upx;
+			}
+
 			.category {
 				width: 94%;
 				padding: 20upx 3%;
-
-				.all {
-					position: fixed;
-					padding: 10upx;
-					font-size: 24upx;
-					background-color: #FFFFFF;
-					z-index: 10000;
-					border: 2upx solid #EEEEEE;
-					top: 110upx;
-
-					.top {
-						display: flex;
-						justify-content: space-between;
-						padding: 16upx;
-					}
-
-					.cate-list {
-						display: flex;
-						flex-wrap: wrap;
-
-						.tab-bar-item {
-							padding: 8upx 13upx;
-							margin-left: 15upx;
-							margin-bottom: 15upx;
-							display: inline-block;
-							text-align: center;
-							box-sizing: border-box;
-							border: 1px solid #CCCCCC;
-							border-radius: 10upx;
-
-							.tab-bar-title {
-								font-size: 24upx;
-								font-weight: 400;
-							}
-						}
-
-						.active {
-							border: 1px solid #e84341;
-
-							.tab-bar-title {
-								color: #e84341 !important;
-								font-size: 28upx;
-							}
-						}
-					}
-				}
-
 				.banner {
 					width: 100%;
 					height: 28vw;
 					border-radius: 10upx;
 					overflow: hidden;
-					
-
+				
 					image {
 						width: 100%;
 						height: 100%;
 					}
 				}
-
-				.place {
-					background-color: #ffffff;
-					height: 80upx;
-				}
-
-
-
-
-				.list {
+				
+				.goodslist {
 					margin-top: 20rpx;
 					width: 100%;
 					display: flex;
 					flex-wrap: wrap;
-
-					.loading-text {
-						width: 100%;
-						display: flex;
-						justify-content: center;
-						align-items: center;
-						height: 60upx;
-						color: #979797;
-						font-size: 24upx;
-					}
-
+				
 					.good-info {
 						width: 100%;
 						height: 100rpx;
@@ -626,47 +630,47 @@
 						border-bottom: 1px solid #eee;
 						padding: 20upx;
 						height: 200upx;
-
+				
 						.left-info {
 							width: 37%;
 							height: 200upx;
-
+				
 							image {
 								width: 200upx;
 								height: 200upx;
 							}
 						}
-
+				
 						.right-info {
 							width: 70%;
 							padding: 20upx;
 							margin-left: 20upx;
-
+				
 							.title {
 								// height: 50%;
 							}
-
+				
 							.price {
 								margin-top: 40upx;
 								display: flex;
 								justify-content: space-between;
 								color: #e84341;
 								align-items: center;
-
+				
 								.dis_price {
 									color: #b2b2b2;
 									margin-left: 10rpx;
 									font-size: 30rpx;
 								}
-
+				
 								.cartNum {
 									position: relative;
-
+				
 									.cart {
 										width: 50upx;
 										height: 50upx;
 									}
-
+				
 									.num {
 										position: absolute;
 										right: -10rpx;
@@ -681,10 +685,10 @@
 										display: flex;
 										align-items: center;
 										justify-content: center;
-
+				
 									}
 								}
-
+				
 							}
 						}
 					}

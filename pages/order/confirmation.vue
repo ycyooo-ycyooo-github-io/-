@@ -1,11 +1,11 @@
 <template>
 	<view>
 		<!-- 温馨提示 -->
-		<view class="word">
+		<view class="word" v-if="word.length>0">
 			<view class="main-header" v-for="(item,index) in word" :key="index">
 				{{item}}
 			</view>
-			
+
 		</view>
 		<!-- 收货地址 -->
 		<view class="addr" @tap="selectAddress">
@@ -33,15 +33,25 @@
 		<!-- 购买商品列表 -->
 		<view class="buy-list">
 			<view class="row" v-for="(row,index) in buylist" :key="index">
-				<view class="goods-info">
+				<view class="goods-info" @tap="togoods(row)">
 					<view class="img">
 						<image :src="row.pro_img"></image>
 					</view>
 					<view class="info">
 						<view class="title">{{row.pro_name}}</view>
-						<view class="spec">数量:{{row.pronum}}</view>
+						<view class="spec">数量:{{row.pronum}}
+							<!-- <text v-if="row.dis_price" style="margin-left: 10rpx;">单价:{{row.dis_price}}</text>
+							<text v-else-if="row.sec_price" style="margin-left: 10rpx;">秒杀价:{{row.sec_price}}</text>
+							<text v-else-if="row.group_price" style="margin-left: 10rpx;">拼团价:{{row.group_price}}</text> -->
+							<text style="margin-left: 10rpx;">单价:{{row.pro_price}}</text>
+						</view>
 						<view class="price-number">
-							<view class="price" v-if="row.dis_price">￥{{row.dis_price*row.pronum}}</view>
+							<view class="price" v-if="row.dis_price">￥{{row.dis_price*row.pronum}}
+								<text style="text-decoration: line-through;font-size: 24rpx;color: #B2B2B2;margin-left: 10rpx;">{{row.pro_price*row.pronum}}</text>
+							</view>
+							<view class="price" v-else-if="row.sec_price">￥{{row.sec_price*row.pronum}}
+								<text style="text-decoration: line-through;font-size: 24rpx;color: #B2B2B2;margin-left: 10rpx;">{{row.pro_price*row.pronum}}</text>
+							</view>
 							<view class="price" v-else>￥{{row.pro_price*row.pronum}}</view>
 						</view>
 					</view>
@@ -108,7 +118,7 @@
 					{{disType==1?'满减优惠':"优惠券"}}
 				</view>
 				<view class="content" v-if="disPrice">
-					￥-{{disPrice}} 
+					￥-{{disPrice}}
 				</view>
 				<view class="content" v-else>
 					暂无优惠
@@ -142,7 +152,8 @@
 		data() {
 
 			return {
-				word:[],
+				userProvider: '',
+				word: [],
 				id: '',
 				secret: {},
 				buylist: [], //订单列表
@@ -166,26 +177,40 @@
 				// 快递费用
 				shipmoney: '',
 				choose: false,
-				store:'',
-
+				store: '',
+				ordersn: '',
+				goods: [],
+				goodsIdList: [],
+				couponid: '',
+				group: ''
 			};
 		},
 		onLoad(option) {
-			this.store=option.store;
-			console.log(this.store)
-			this.loadData();
+			this.userProvider = this.$xm.userProvider();
+			this.store = option.store;
+			this.ordersn = option.ordersn;
+			if (option.proid) {
+				this.goods = [option.proid, option.pronum];
+			}
+			this.goodsIdList = [option.goods_list];
+			if (option) {
+				if (option.type) {
+					this.group = option
+					this.freight = 0;
+				}
+			}
+			console.log(this.group);
 			this.getAddress();
 		},
 		onShow() {
+			this.loadData();
 			uni.getStorage({
 				key: 'selectAddress',
 				success: (res) => {
-					console.log('地址',res);
+					console.log(res);
 					this.recinfo = res.data;
-					// this.loadData();
 				}
 			});
-			
 		},
 		filters: {
 			toFixed: function(x) {
@@ -194,8 +219,8 @@
 		},
 		methods: {
 			// 获取地址
-			getAddress() {				
-				this.$xm.post('/Order/getDefAdr/','', (res) => {
+			getAddress() {
+				this.$xm.post('/Order/getDefAdr/', '', (res) => {
 					console.log(res);
 					this.recinfo = res;
 
@@ -203,35 +228,69 @@
 			},
 			//加载购物车信息
 			loadData() {
-				let data={
-					store:this.store
+				let data = {
+					store: this.store,
+				};
+				if (this.ordersn) {
+					data.order_sn = this.ordersn
+				} else if (this.goods.length > 0) {
+					data.goods = this.goods;
+				} else if (this.goodsIdList) {
+					data.goods_list = this.goodsIdList
 				}
-				this.$xm.post('/Cart', data, res => {
-					this.word=res.word;
-					let goodsList = res.prolist;
-					var payPrice = res.allprice;
-					this.$xm.requestImg(goodsList);
-					this.buylist = goodsList;
-					this.minprice = Number(res.minprice)
-					this.goodsPrice = res.allprice;
-					this.tips = res.tips;
-					this.payPrice = Number(payPrice);
-					if (this.minprice > this.payPrice) {
-						this.goodsPrice = this.payPrice + this.freight;
+				// 参团
+				if (this.group.type == "group" || this.group.type == "join") {
+					data.isgroup = 1
+				}
+				// 砍价
+				if (this.group.type == "isBargain") {
+					data.isBargain = 1;
+				}
+				this.$xm.post('/cart/order', data, res => {
+					if (res.s == 0) {
+						uni.showToast({
+							title: res.msg,
+							icon: 'none'
+						})
+					} else {
+						this.word = res.word;
+						this.buylist = res.prolist;
+						this.$xm.requestImg(this.buylist);
+						this.minprice = Number(res.minprice)
+						this.goodsPrice = res.allprice;
+						this.tips = res.tips;
+						this.payPrice = Number(res.allprice);
+						if (this.minprice > this.payPrice) {
+							this.goodsPrice = this.payPrice + this.freight;
+						}
+						let goodsList = [];
+						goodsList = this.buylist.map(ele => {
+							return ele.proid + '/' + ele.pronum
+						})
+						this.discounts(goodsList);
 					}
-					this.discounts(res.allprice);
-
 
 				})
 			},
 			//获取优惠
-			discounts(num) {
-				let data = {					
-					store: this.store,					
-					money: num
+			discounts(goodsList) {
+				let data = {
+					store: this.store,
+					goods_list: goodsList
 				}
-				this.$xm.post('/Coupon/match_optimals', data, res => {
+				// 开团
+				if (this.group.type == "group" || this.group.type == "join") {
+					data.isgroup = 1
+				}
+				// 砍价
+				if (this.group.type == "isBargain") {
+					data.isBargain = 1
+				}
+				this.$xm.post('/Coupon/match_optimalss', data, res => {
 					if (res.data) {
+						if (res.data.type == 2) {
+							this.couponid = res.data.id
+						}
 						this.sumPrice = res.data.money;
 						var payLing = res.data.money;
 						this.payLing = Number(payLing);
@@ -239,7 +298,7 @@
 							this.sumPrice = this.payLing + this.freight;
 						}
 						this.tips = res.data.msg;
-						
+
 						this.disPrice = res.data.cut;
 						this.disType = res.data.type;
 						this.getship()
@@ -250,15 +309,21 @@
 			// 获取快递方式
 			getship() {
 				if (this.recinfo) {
-					let data = {						
-						shipid: this.recinfo.id,						
+					let data = {
+						shipid: this.recinfo.id,
 						allprice: this.payLing,
-						store:this.store
+						store: this.store
+					}
+					// 开团
+					if (this.group.type == "group" || this.group.type == "join") {
+						data.isgroup = 1
+					} else if (this.group.type == "isBargain") {
+						data.isBargain = 1
 					}
 					this.$xm.post('/Order/getShipMoney', data, (res) => {
 						console.log(res);
-						if (res.data !== undefined ) {
-							if(res.data.constructor==Array){
+						if (res.data !== undefined) {
+							if (res.data.constructor == Array) {
 								this.items = res.data;
 								this.items.forEach(ele => {
 									ele.checked = ''
@@ -267,20 +332,20 @@
 								this.ship_name = this.items[0].name;
 								this.shipmoney = this.items[0].price;
 								this.freight = this.items[0].price;
-							}else{
-								this.items=[];
+							} else {
+								this.items = [];
 								this.freight = res.data.price;
 								this.shipmoney = res.data.price;
 								this.ship_name = res.data.name;
 							}
-							
+
 						}
 
 					})
 				} else {
 					uni.showToast({
 						title: '请选择收件地址！',
-						icon: false
+						icon: 'none'
 					})
 				}
 
@@ -295,7 +360,7 @@
 				} else if (e.detail.value == '顺丰快递') {
 					index = 1;
 					this.shipmoney = 15;
-				} else if (e.detail.value == '满59包邮') {
+				} else if (e.detail.value.includes('包邮')) {
 					index = 0;
 					this.shipmoney = 0;
 
@@ -309,82 +374,166 @@
 
 			},
 			toPay() {
-				let data = {					
-					shipid: this.recinfo.id, //地址id
-					shipmoney: this.shipmoney, //运费
-					ship_name: this.ship_name, //物流方式名称
-					memo: this.note, //备注
-					couponid: '',
-					store:this.store
+				let scene;
+				if (uni.getStorageSync('scene')) {
+					scene = uni.getStorageSync('scene');
+				} else {
+					scene = ''
 				}
-				this.$xm.post('/Order/saveOrder', data, (res) => {
-					let data = res.data;
-					if (res.s == 1) {
-						uni.requestPayment({
-							timeStamp: data.timeStamp,
-							nonceStr: data.nonceStr,
-							package: data.package,
-							signType: data.signType,
-							paySign: data.paySign,
-							success: function(res) {
-								console.log(res)
-							},
-							fail: function(res) {
-								console.log(res)
-							},
-							complete: function(res) {
-								if (res.errMsg == 'requestPayment:ok') {
-									uni.showModal({
-										title: '支付成功！',
-										content: '',
-										showCancel: false,
-										confirmText: '确  定',
-										confirmColor: '#2c2c2c',
-										success: function(res) {
-											uni.redirectTo({
-												url: '../user/order_list/order_list?tbIndex=1'
-											})
-										}
-									})
-								} else {
-									uni.showModal({
-										title: '支付失败！',
-										content: '',
-										showCancel: false,
-										confirmText: '确  定',
-										confirmColor: '#2c2c2c',
-										success: function(res) {
-											if (res.confirm) {
-												wx.redirectTo({
-													url: '../user/order_list/order_list?tbIndex=0'
-												})
-											}
-										}
-									})
-								}
-
-							}
-						});
-					} else {
-						uni.showToast({
-							title: res.msg,
-							icon: 'none'
-						});
+				if (this.recinfo) {
+					let data = {
+						shipid: this.recinfo.id, //地址id
+						shipmoney: this.shipmoney, //运费
+						ship_name: this.ship_name, //物流方式名称
+						memo: this.note, //备注
+						couponid: this.couponid,
+						store: this.store,
+						scene: scene,
 					}
-				})
+					if (this.ordersn) {
+						data.order = this.ordersn
+					} else if (this.goods.length > 0) {
+						data.goods = this.goods;
+					} else if (this.goodsIdList) {
+						data.goods_list = this.goodsIdList
+					}
+					// 开团
+					if (this.group.type == "group") {
+						data.isgroup = 1;
+						data.gid = this.group.sid;
+					}
+					// 参团
+					if (this.group.type == "join") {
+						data.isgroup = 1;
+						data.gid = this.group.sid;
+						data.groupid = this.group.groupid;
+					}
+					// 砍价
+					if (this.group.type == "isBargain") {
+						data.isBargain = 1;
+						data.mid = this.group.mid;
+					}
+					console.log(this.userProvider);
+					if (this.userProvider == 'weixin') {
+						wx.requestSubscribeMessage({
+							tmplIds: ['Tq1zoW5_X4aokfmiG1OWVjq6AHuM9PDYAmociqqkIIE', 'LQ-y5nQFBJwpT-UcwVogzumUoxHJRVsQF5RUFDGlqR8',
+								'R3UHttvPZqGuAt97I4bFezelaT9ZJuKQi32cuWLc3bg', 'R3UHttvPZqGuAt97I4bFezelaT9ZJuKQi32cuWLc3bg'
+							],
+							success: (res) => {
+								console.log(res);
+								this.$xm.post('/Order/saveOrder', data, (res) => {
+									let result = res.data;
+									if (res.s == 1) {
+										uni.requestPayment({
+											timeStamp: result.timeStamp,
+											nonceStr: result.nonceStr,
+											package: result.package,
+											signType: result.signType,
+											paySign: result.paySign,
+											success: (res) => {
+												console.log(res)
+											},
+											fail: (res) => {
+												console.log(res)
+											},
+											complete: (res) => {
+												if (res.errMsg == 'requestPayment:ok') {
+													uni.showModal({
+														title: '支付成功！',
+														content: '',
+														showCancel: false,
+														confirmText: '确  定',
+														confirmColor: '#2c2c2c',
+														success: (res) => {
+															uni.redirectTo({
+																url: '../user/order_list/order_list?tbIndex=1'
+															})
+														}
+													})
+												} else {
+													uni.showModal({
+														title: '支付失败！',
+														content: '',
+														showCancel: false,
+														confirmText: '确  定',
+														confirmColor: '#2c2c2c',
+														success: (res) => {
+															if (res.confirm) {
+																if (data.isgroup) {
+																	let params = {
+																		order_sn: result.out_trade_no
+																	}
+																	this.$xm.post("/groupbuy/del_group_order", params, (res) => {
+																		if (res == 'ok') {
+																			uni.switchTab({
+																				url: '../index/index'
+																			})
+																		}
+																	})
+																} else {
+																	wx.redirectTo({
+																		url: '../user/order_list/order_list?tbIndex=0'
+																	})
+																}
+															}
+														}
+													})
+												}
+
+											}
+										});
+									} else {
+										uni.showToast({
+											title: res.msg,
+											icon: 'none'
+										});
+									}
+								})
+
+							},
+
+							fail: (err) => {
+								console.error(err);
+							}
+
+						})
+					} else {
+						console.log('支付')
+						this.$xm.post('/Order/saveOrder', data, (res) => {
+							console.log(res)
+							let result = res.data;
+							if (res.s == 1) {
+
+							} else {
+								uni.showToast({
+									title: res.msg,
+									icon: 'none'
+								});
+							}
+						})
+					}
+
+
+				}
 			},
 			//选择收货地址
 			selectAddress() {
 				uni.navigateTo({
 					url: '../user/address/address?type=select'
 				})
-			}
+			},
+			togoods(e) {
+				console.log(e.proid);
+				uni.navigateTo({
+					url: '../goods/goods?gid=' + e.proid
+				});
+			},
 		}
 	}
 </script>
 
 <style lang="scss">
-	.word{		
+	.word {
 		background-color: #FEFCED;
 		padding: 25rpx;
 		font-size: 26rpx;
@@ -393,6 +542,7 @@
 		line-height: 35rpx;
 
 	}
+
 	.addr {
 		width: 86%;
 		padding: 20upx 3%;
@@ -400,6 +550,7 @@
 		box-shadow: 0upx 5upx 20upx rgba(0, 0, 0, 0.1);
 		border-radius: 20upx;
 		display: flex;
+		align-items: center;
 
 		.icon {
 			width: 80upx;

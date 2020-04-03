@@ -2,7 +2,6 @@
   "navigationBarTextStyle": "black",
   "navigationBarBackgroundColor": "#FFFFFF",
   "navigationBarTitleText": "商品分类",
-  "enablePullDownRefresh": true,
   "onReachBottomDistance": 50,
   "usingComponents": {
     "tui-icon": "/components/icon/icon"

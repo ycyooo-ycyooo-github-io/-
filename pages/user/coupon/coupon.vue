@@ -18,10 +18,10 @@
 					<view class="carrier" :class="[typeClass=='valid'?theIndex==index?'open':oldIndex==index?'close':'':'']" @touchstart="touchStart(index,$event)" @touchmove="touchMove(index,$event)" @touchend="touchEnd(index,$event)">
 						<view class="left">
 							<view class="title">
-								{{row.title}}
+								优惠券
 							</view>
 							<view class="term">
-								{{row.termStart}} ~ {{row.termEnd}}
+								{{row.start_time}} ~ {{row.end_time}}
 							</view>
 							<view class="gap-top"></view>
 							<view class="gap-bottom"></view>
@@ -29,18 +29,18 @@
 						<view class="right">
 							<view class="ticket">
 								<view class="num">
-									{{row.ticket}}
+									{{row.cut}}
 								</view>
 								<view class="unit">
 									元
 								</view>
 							</view>
 							<view class="criteria">
-								{{row.criteria}}
+								满{{row.conditions}}元使用
 							</view>
-							<view class="use">
+							<!-- <view class="use">
 								去使用
-							</view>
+							</view> -->
 						</view>
 					</view>
 				</view>
@@ -56,10 +56,10 @@
 					<view class="carrier" :class="[typeClass=='invalid'?theIndex==index?'open':oldIndex==index?'close':'':'']" @touchstart="touchStart(index,$event)" @touchmove="touchMove(index,$event)" @touchend="touchEnd(index,$event)">
 						<view class="left">
 							<view class="title">
-								{{row.title}}
+								优惠券
 							</view>
 							<view class="term">
-								{{row.termStart}} ~ {{row.termEnd}}
+								{{row.start_time}} ~ {{row.end_time}}
 							</view>
 							<view class="icon shixiao">
 								
@@ -70,18 +70,18 @@
 						<view class="right invalid">
 							<view class="ticket">
 								<view class="num">
-									{{row.ticket}}
+									{{row.cut}}
 								</view>
 								<view class="unit">
 									元
 								</view>
 							</view>
 							<view class="criteria">
-								{{row.criteria}}
+								满{{row.conditions}}元使用
 							</view>
-							<view class="use">
+							<!-- <view class="use">
 								去查看
-							</view>
+							</view> -->
 						</view>
 					</view>
 				</view>
@@ -96,26 +96,16 @@
 	export default {
 		data() {
 			return {
-				couponValidList:[
-					// {id:1,title:"日常用品立减10元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"10",criteria:"满50使用"},
-					// {id:2,title:"家用电器立减100元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"100",criteria:"满500使用"},
-					// {id:3,title:"全场立减10元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"10",criteria:"无门槛"},
-					// {id:4,title:"全场立减50元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"50",criteria:"满1000使用"}
-					
-				],
-				couponinvalidList:[
-					// {id:1,title:"日常用品立减10元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"10",criteria:"满50使用"},
-					// {id:2,title:"家用电器立减100元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"100",criteria:"满500使用"},
-					// {id:3,title:"全场立减10元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"10",criteria:"无门槛"},
-					// {id:4,title:"全场立减50元",termStart:"2019-04-01",termEnd:"2019-05-30",ticket:"50",criteria:"满1000使用"}
-				],
+				couponValidList:[],
+				couponinvalidList:[],
 				headerTop:0,
 				//控制滑动效果
 				typeClass:'valid',
 				subState:'',
 				theIndex:null,
 				oldIndex:null,
-				isStop:false
+				isStop:false,
+				typeIndex:1
 			}
 		},
 		onPageScroll(e){
@@ -128,6 +118,7 @@
 		    }, 1000);
 		},
 		onLoad() {
+			this.getCoupon()
 			//兼容H5下排序栏位置
 			// #ifdef H5
 				//定时器方式循环获取高度为止，这么写的原因是onLoad中head未必已经渲染出来。
@@ -142,6 +133,12 @@
 		},
 		methods: {
 			switchType(type){
+				if(type=='valid'){
+					this.typeIndex=1
+				}else{
+					this.typeIndex=2
+				}
+				this.getCoupon();
 				if(this.typeClass==type){
 					return ;
 				}
@@ -206,7 +203,25 @@
 				//解除禁止触发状态
 				this.isStop = false;
 			},
-			
+			// 获取优惠券
+			getCoupon(){
+				let data={
+					type:this.typeIndex
+				};
+				this.$xm.post('/Coupon/index',data,(res)=>{
+					if(res.data.length>0){
+						res.data.map(ele=>{
+							ele.start_time=this.$xm.changeDay(ele.start_time*1000);
+							ele.end_time=this.$xm.changeDay(ele.end_time*1000)
+						})
+					}
+					if(this.typeIndex==1){
+						this.couponValidList=res.data;
+					}else if(this.typeIndex==2){
+						this.couponinvalidList=res.data;
+					}
+				})
+			},
 			//删除商品
 			deleteCoupon(id,List){
 				let len = List.length;

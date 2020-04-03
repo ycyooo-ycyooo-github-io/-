@@ -50,13 +50,8 @@
 				"navigationBarTextStyle": "black",
 				"navigationBarBackgroundColor": "#FFFFFF",
 				"navigationBarTitleText": "商品分类",
-				"enablePullDownRefresh": true,
-				"onReachBottomDistance": 50,
-				"app-plus": {
-					"titleNView": false, //禁用原生导航栏
-					"bounce": "none"
-
-				}
+				// "enablePullDownRefresh": true,
+				"onReachBottomDistance": 50
 			}
 		},
 		{
@@ -181,7 +176,7 @@
 		{
 			"path": "pages/user/order_list/orderEdit/orderEdit",
 			"style": {
-				"navigationBarTitleText": "订单详情",
+				"navigationBarTitleText": "修改地址",
 				"navigationBarBackgroundColor": "#f8f8f8",
 				"backgroundColorTop": "#f3f3f3",
 				"backgroundColorBottom": "#ffffff"
@@ -234,14 +229,73 @@
 		}, {
 			"path": "pages/parse/parse/parse",
 			"style": {}
-		}	    
-        ,{
+		},
+		{
             "path" : "pages/seckill/seckill/seckill",
             "style" : {
 				"navigationBarTitleText": "限时抢购",
 				"navigationBarBackgroundColor": "#FFFFFF"
 			}
+        },
+		{
+			"path": "pages/logisticsTrack/track",
+			"style": {
+				"navigationBarTitleText": "物流跟踪"
+			}
+		},
+		{
+            "path" : "pages/user/order_list/refund/refund",
+            "style" : {
+				"navigationBarTitleText": "选择服务类型"
+			}
+        },
+		{
+		    "path" : "pages/user/order_list/refund/money/money",
+		    "style" : {
+				"navigationBarTitleText": "申请退款"
+			}
+		},
+		{
+		    "path" : "pages/user/order_list/refund/refundGood/refundGood",
+		    "style" : {
+				"navigationBarTitleText": "申请退货退款"
+			}
+		}
+        ,{
+            "path" : "pages/user/order_list/refund/barter/barter",
+            "style" : {
+				"navigationBarTitleText": "申请换货"
+			}
         }
+        ,{
+            "path" : "pages/goods/goods-list/product/product",
+            "style" : {}
+        },
+		{
+		    "path" : "pages/seckill/join/join",
+		    "style" : {
+				"navigationBarTitleText": "邀请"
+			}
+		},{
+		    "path" : "pages/seckill/group/group",
+		    "style" : {
+				"navigationBarTitleText": "拼团"
+			}
+		},
+		{
+		    "path" : "pages/seckill/bargain/bargain",
+		    "style" : {
+				"navigationBarTitleText": "砍价0元购"
+			}
+		},
+		{
+		    "path" : "pages/seckill/bargain/cut",
+		    "style" : {
+				"navigationBarTitleText": "砍价0元拿",
+				"enablePullDownRefresh": true
+			}
+		}
+       
     ],
 	
 	"globalStyle": {

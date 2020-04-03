@@ -24,43 +24,50 @@
 							<view class="icon shanchu" @tap="del(row)"></view>
 						</view>
 						<view class="order-info" @tap="toOrderDtl(row.order_sn)">
-							<view class="left">
-								<view class="imgList" v-for="(item,i) in row.pro" :key="i">
-									<image :src="item.pro_img"></image>
+							<scroll-view class="scroll-view" scroll-x="true" @bindscroll="scroll" :scroll-left="listscrollLeft">
+								<view class="left">
+									<view class="imgList" v-for="(item,i) in row.pro" :key="i">
+										<image :src="item.pro_img"></image>
+									</view>
 								</view>
-							</view>
-
+							</scroll-view>
 						</view>
-						<view class="detail">							
+						<view class="detail">
 							<view class="number">共{{row.pro.length}}件商品</view>
-							<view class="sum">合计￥<view class="price">{{row.allprice}}</view>
+							<view class="sum">合计￥<view class="price">{{row.amtprice}}</view>
 							</view>
 							<view class="nominal">(含运费 ￥{{row.order_ship_price}})</view>
 						</view>
 					</view>
 					<view class="btns">
-
-						<block>
-							<view class="default" @tap="buyAgain(row)">再次购买</view>
-						</block>
 						<block v-if='row.order_state=="0"||row.order_state=="1"'>
 							<view class="default" @tap="edit(row)">修改地址</view>
 						</block>
 						<block v-if='row.order_state=="1"||row.order_state=="2"'>
-							<view class="pay" @tap="modalShow(row)">申请退款</view>
+							<view class="default" @tap="modalShow(row)">申请退款</view>
 						</block>
-
+						<block v-if='row.order_state=="3"||row.order_state=="4"'>
+							<view class="default" @tap="showLogistics(row)">查看物流</view>
+						</block>
 						<block v-if="row.order_state=='0'">
 							<view class="pay" @tap="toPayment(row)">付款</view>
+						</block>
+						<block v-if='row.order_state=="3" || row.order_state=="4"'>
+							<view class="default" @tap="toOrderDtl(row.order_sn)">我要退货</view>
+						</block>
+						<block v-if='row.order_state=="3"'>
+							<view class="pay" @tap="toConfirm(row.order_sn)">确认收货</view>
+						</block>
+						<block v-if='row.order_state=="4" || row.order_state=="8"'>
+							<view class="pay" @tap="buyAgain(row)">再次购买</view>
+						</block>
+						<block v-if='row.group_id&&row.order_state!=6'>
+							<view class="pay" @tap="toGroup(row)">{{row.group_status==0?"邀请好友拼团":'拼团信息'}}</view>
 						</block>
 						<!-- <block v-if="row.order_state=='已付款'">
 							<view class="default" @tap="remindDeliver(row)">提醒发货</view>
 						</block>
-						<block v-if="row.order_state=='配货中'">
-							<view class="default" @tap="showLogistics(row)">查看物流</view>
-							<view class="pay">确认收货</view>
-							<view class="pay">我要退货</view>
-						</block>
+						
 						<block v-if="row.order_state=='已发货'">
 							<view class="default">评价</view>
 							<view class="default">再次购买</view>
@@ -74,11 +81,11 @@
 						<block v-if="row.order_state=='退款订单'">
 							<view class="default">再次购买</view>
 						</block> -->
-					</view>					
+					</view>
 				</view>
 				<view class="loading-text" v-if="list.length>0">{{ loadingText }}</view>
 			</view>
-			
+
 		</view>
 		<tui-modal :show="txtmodal" @cancel="txtmodal=false" :custom="true" :fadein="true">
 			<view class="tui-modal-custom">
@@ -87,6 +94,7 @@
 				<button shape="circle" @tap="refund" size="small" type="warn">立即提交</button>
 			</view>
 		</tui-modal>
+		<tui-scroll-top :scrollTop="top"></tui-scroll-top>
 	</view>
 </template>
 <script>
@@ -97,39 +105,45 @@
 		},
 		data() {
 			return {
-				secret: {},
+				gid: '',
 				pageid: 1,
 				status: '',
 				headerPosition: "fixed",
 				headerTop: "0px",
 				orderType: [{
-					name: '全部',
-					sort: 's',
-				}, {
-					name: '未付款',
-					sort: '0'
-				}, {
-					name: '已付款',
-					sort: '1'
-				}, {
-					name: '配货中',
-					sort: '2'
-				}, {
-					name: '已发货',
-					sort: '3'
-				}, {
-					name: '已收货',
-					sort: '4'
-				}, {
-					name: '已作废',
-					sort: '5'
-				}, {
-					name: '已删除',
-					sort: '6'
-				}, {
-					name: '已退款',
-					sort: '8'
-				}],
+						name: '全部',
+						sort: 's',
+					}, {
+						name: '待付款',
+						sort: '0'
+					}, {
+						name: '待发货',
+						sort: '1'
+					},
+					{
+						name: '配货中',
+						sort: '2'
+					}, 
+					{
+						name: '待收货',
+						sort: '3'
+					},
+					{
+						name: '已收货',
+						sort: '4'
+					},
+					// {
+					// 	name: '已作废',
+					// 	sort: '5'
+					// }, {
+					// 	name: '已删除',
+					// 	sort: '6'
+					// }, 
+					{
+						name: '已退款',
+						sort: '8'
+					}
+				],
 				//订单列表 演示数据
 				orderList: [],
 				list: [],
@@ -138,20 +152,15 @@
 				txt: '', //退款原因
 				// 退款弹框
 				txtmodal: false,
-				refundList:[],
-				loadingText:'正在加载中...'
+				refundList: [],
+				loadingText: '正在加载中...',
+				top: 0,
+				listscrollLeft: 0 // 向左滑动距离
 			};
 		},
 		onLoad(option) {
 			this.tabbarIndex = option.tbIndex;
-			uni.getStorage({
-				key: 'user',
-				success: (res) => {
-					this.secret = res.data;
-					this.getlist();
-				}
-			})
-
+			this.getlist();
 			//兼容H5下排序栏位置
 			// #ifdef H5
 			let Timer = setInterval(() => {
@@ -167,27 +176,27 @@
 
 		},
 		onPageScroll(e) {
+			this.top = e.scrollTop;
 			return;
 			//兼容iOS端下拉时顶部漂移
 			this.headerPosition = e.scrollTop >= 0 ? "fixed" : "absolute";
 		},
 		methods: {
+			scroll(e) {
+				this.listscrollLeft = e.detail.scrollLeft;
+			},
 			// 获取订单
 			getlist() {
 				let data = {
-					xopenid: this.secret.openid,
 					pageid: this.pageid,
 					status: this.tabbarIndex != "s" ? this.tabbarIndex : '',
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
 				};
 
 				this.$xm.post('/Order/getList', data, res => {
-
 					if (res.orderlist.length > 0) {
 						res.orderlist.forEach(ele => {
 							this.$xm.requestImg(ele.pro);
-
+							ele.amtprice=parseFloat(ele.actually_amt)+parseFloat(ele.order_ship_price)
 							switch (ele.order_state) {
 								case '0':
 									ele.tips = '未付款'
@@ -211,7 +220,7 @@
 									ele.tips = '已删除'
 									break;
 								case '7':
-									ele.tips = '已退款'
+									ele.tips = '待退款'
 									break;
 								case '8':
 									ele.tips = '已退款'
@@ -222,7 +231,7 @@
 						})
 					}
 					this.list = res.orderlist;
-					this.loadingText='到底了'
+					this.loadingText = '到底了'
 				})
 			},
 			// 切换导航 
@@ -235,40 +244,68 @@
 			},
 			// 跳转详情页
 			toOrderDtl(e) {
-				console.log(e);
 				uni.navigateTo({
 					url: './orderDtl/orderDtl?id=' + e
 				})
 			},
-			showLogistics(row) {
-
-			},
-			//再次购买
-			buyAgain(row) {
+			toConfirm(e) {
 				let data = {
-					xopenid: this.secret.openid,
-					ordersn: row.order_sn,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+					order_sn: e
 				};
-
-				this.$xm.post('/Order/buyAgain', data, res => {
-					if (res.s == 1) {
-						uni.navigateTo({
-							url: '../../order/confirmation'
-						})
+				this.$xm.post('/Order/received', data, (res) => {
+					uni.showToast({
+						title: res.msg,
+						icon: 'none'
+					})
+					if(res.code==2000){
+						this.getlist()
 					}
 				})
 			},
+			showLogistics(row) {
+				uni.navigateTo({
+					url: '../../logisticsTrack/track?id=' + row.id
+				})
+			},
+			//再次购买
+			buyAgain(row) {
+				let store;
+				if (uni.getStorageSync('store').store_code) {
+					store = uni.getStorageSync('store').store_code;
+				} else {
+					store = 10001
+				}
+				uni.navigateTo({
+					url: '../../order/confirmation?store=' + store + '&ordersn=' + row.order_sn
+				})
+				// let data = {
+				// 	ordersn: row.order_sn
+				// };				
+				// this.$xm.post('/Order/buyAgain', data, res => {
+				// 	if (res.s == 1) {
+				// 		let store;
+				// 		if(uni.getStorageSync('store').store_code){
+				// 			store=uni.getStorageSync('store').store_code;
+				// 		}else{
+				// 			store=10001
+				// 		}
+				// 		uni.navigateTo({
+				// 			url: '../../order/confirmation?store='+store+'&ordersn='+row.order_sn
+				// 		})
+				// 	}
+				// })
+			},
+
 			// 修改地址
 			edit(row) {
+				console.log(row);
 				uni.navigateTo({
 					url: './orderEdit/orderEdit?sn=' + row.order_sn
 				})
 			},
-			modalShow(row){
-				this.txtmodal=true;
-				this.refundList=row;
+			modalShow(row) {
+				this.txtmodal = true;
+				this.refundList = row;
 			},
 			// 退款
 			refund() {
@@ -282,10 +319,7 @@
 						if (res.confirm) {
 							let params = {
 								status: 7,
-								xopenid: this.secret.openid,
 								ordersn: this.refundList.order_sn,
-								secret: this.secret.secret,
-								timestamp: this.secret.timestamp,
 								memo: this.txt
 							}
 							this.$xm.post('/Order/changeStatus', params, eve => {
@@ -314,10 +348,7 @@
 			},
 			del(row) {
 				let data = {
-					xopenid: this.secret.openid,
 					ordersn: row.order_sn,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp,
 					status: '6'
 				}
 				this.$xm.post('/Order/changeStatus', data, (res) => {
@@ -329,7 +360,8 @@
 						})
 					} else {
 						uni.showToast({
-							title: '删除失败'
+							title: '不能重复删除！',
+							icon: 'none'
 						})
 					}
 				})
@@ -371,12 +403,8 @@
 			},
 			// 付款
 			toPayment(row) {
-
 				let params = {
-					xopenid: this.secret.openid,
-					order_sn: row.order_sn,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+					order_sn: row.order_sn
 				}
 				this.$xm.post('/Order/rePay', params, res => {
 					if (res.s == 1) {
@@ -435,6 +463,11 @@
 				uni.navigateTo({
 					url: './orderDtl/orderDtl'
 				})
+			},
+			toGroup(row) {
+				uni.navigateTo({
+					url: '../../seckill/join/join?sn=' + row.order_sn + '&groupid=' + row.group_id
+				})
 			}
 		}
 	}
@@ -445,6 +478,7 @@
 		background-color: #f3f3f3;
 
 	}
+
 	.loading-text {
 		width: 100%;
 		display: flex;
@@ -454,6 +488,7 @@
 		color: #979797;
 		font-size: 24upx;
 	}
+
 	.tui-modal-custom {
 		text-align: center;
 		font-size: 35rpx;
@@ -478,7 +513,7 @@
 		background-color: #f8f8f8;
 		height: 80upx;
 		display: flex;
-		justify-content: space-around;
+		justify-content: space-between;
 
 		.tab-view::before {
 			content: '';
@@ -676,11 +711,11 @@
 				}
 
 				.btns {
-					height: 80upx;
+					height: 80rpx;
 					display: flex;
 					align-items: center;
 					justify-content: flex-end;
-
+					padding: 10rpx 0;
 					view {
 						min-width: 120upx;
 						height: 50upx;

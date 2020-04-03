@@ -21,7 +21,17 @@
     "pages/store/store/store",
     "pages/webViwe/webViwe/webViwe",
     "pages/parse/parse/parse",
-    "pages/seckill/seckill/seckill"
+    "pages/seckill/seckill/seckill",
+    "pages/logisticsTrack/track",
+    "pages/user/order_list/refund/refund",
+    "pages/user/order_list/refund/money/money",
+    "pages/user/order_list/refund/refundGood/refundGood",
+    "pages/user/order_list/refund/barter/barter",
+    "pages/goods/goods-list/product/product",
+    "pages/seckill/join/join",
+    "pages/seckill/group/group",
+    "pages/seckill/bargain/bargain",
+    "pages/seckill/bargain/cut"
   ],
   "subPackages": [],
   "window": {
@@ -69,6 +79,8 @@
       "desc": "用于小程序位置接口"
     }
   },
-  "usingComponents": {},
-  "sitemapLocation": "sitemap61.json"
+  "usingComponents": {
+    "tui-scroll-top": "/components/scroll-top/scroll-top"
+  },
+  "sitemapLocation": "sitemap99.json"
 }

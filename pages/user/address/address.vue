@@ -40,19 +40,13 @@
 		data() {
 			return {
 				isSelect: false,
-				addressList: [],
-				secret:{},
+				addressList: []
 			};
 		},
 		onShow() {
-			uni.getStorage({
-				key:'user',
-				success:(res)=>{
-					this.secret=res.data;
-					this.loadData();
-					this.getDefaultAddress()
-				}
-			})
+			
+			this.loadData();
+			this.getDefaultAddress()
 		},
 		onLoad(e) {			
 			if (e.type == 'select') {
@@ -60,13 +54,8 @@
 			}
 		},
 		methods: {
-			getDefaultAddress(){
-				let data = {
-					xopenid: this.secret.openid,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp					
-				}
-				this.$xm.post('/Order/getDefAdr', data, (res) => {					
+			getDefaultAddress(){				
+				this.$xm.post('/Order/getDefAdr', '', (res) => {					
 					uni.setStorage({
 						key: 'address',
 						data: res,
@@ -86,13 +75,8 @@
 					url: "edit/edit?type=add"
 				})
 			},
-			loadData() {
-				let data={
-					xopenid: this.secret.openid,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
-				}
-				this.$xm.post('/User/shipAdr', data, (res) => {					
+			loadData() {				
+				this.$xm.post('/User/shipAdr','', (res) => {					
 					if (res) {
 						res.forEach((res) => {
 							res.head = res.name.substring(0, 1);
@@ -107,6 +91,7 @@
 				if (!this.isSelect) {
 					return;
 				}
+				
 				uni.setStorage({
 					key: 'selectAddress',
 					data: row,

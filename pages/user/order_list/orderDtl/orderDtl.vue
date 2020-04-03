@@ -1,8 +1,19 @@
-<template>
+ <template>
 	<view>
 		<!-- 订单状态 -->
 		<view class="status">
 			{{type}}
+		</view>
+		<!-- 物流 -->
+		<view class="tui-flex-box" v-if="logisticShow">
+			<image src="https://www.thorui.cn/wx/static/images/mall/order/img_order_logistics3x.png" class="tui-icon-img"></image>
+			<view class="tui-logistics">
+				<view class="tui-logistics-text">{{traces.AcceptStation}}</view>
+				<view class="tui-logistics-time">{{traces.AcceptTime}}</view>
+			</view>
+			<view class="">
+				<tui-icon name="arrowright" color="#b2b2b2" size="20" @tap="toTrack"></tui-icon>
+			</view>
 		</view>
 		<!-- 收货地址 -->
 		<view class="addr">
@@ -27,18 +38,16 @@
 		<!-- 购买商品列表 -->
 		<view class="buy-list">
 			<view class="row" v-for="(row,index) in buylist" :key="index">
-				<view class="goods-info">
-					<view class="img">
+				<view class="goods-info" >
+					<view class="img" @tap="togoods(row)">
 						<image :src="row.pro_sn"></image>
 					</view>
 					<view class="info">
-						<view class="title">{{row.pro_name}}</view>
-						<view class="spec">单价{{row.pro_price}} 数量:{{row.pro_num}}</view>
+						<view class="title" @tap="togoods(row)">{{row.pro_name}}</view>
+						<view class="spec" @tap="togoods(row)">单价{{row.pro_price}} 数量:{{row.pro_num}}</view>
 						<view class="price-number">
-							<view class="price">￥{{row.subtotal}}</view>
-							<view class="number">
-
-							</view>
+							<view class="price" @tap="togoods(row)">￥{{row.subtotal}}</view>
+							<view class="default" @tap="toround(row)" v-if="type=='已发货' || type=='已收货'">退换</view>
 						</view>
 					</view>
 				</view>
@@ -51,7 +60,7 @@
 					积分 :
 				</view>
 				<view class="right">
-					已扣除{{int}}积分抵扣{{deduction|toFixed}}元
+					已扣除{{int}}积分抵扣0元
 				</view>
 			</view>
 			<view class="row">
@@ -64,7 +73,7 @@
 			</view>
 			<view class="row">
 				<view class="left">
-					订单标号:
+					订单编号:
 				</view>
 				<view class="right">
 					<text>{{id}}</text>
@@ -78,7 +87,7 @@
 					<text>{{time}}</text>
 				</view>
 			</view>
-			<view class="row">
+			<view class="row" v-if="order_ship">
 				<view class="left">
 					快递方式:
 				</view>
@@ -86,17 +95,26 @@
 					<text>{{shipname}}</text>
 				</view>
 			</view>
+			<view class="row" v-if="orderShipSn">
+				<view class="left">
+					快递编号:
+				</view>
+				<view class="right">
+					<text>{{orderShipSn}}</text>
+				</view>
+			</view>
 		</view>
 		<!-- 明细 -->
 		<view class="detail">
 			<view class="row">
 				<view class="nominal">
-					商品金额
+					商品总金额
 				</view>
 				<view class="content">
-					￥{{goodsPrice|toFixed}}
+					￥{{totalPrice|toFixed}}
 				</view>
 			</view>
+
 			<view class="row">
 				<view class="nominal">
 					运费
@@ -113,62 +131,71 @@
 					￥-{{deduction|toFixed}}
 				</view>
 			</view>
+			<view class="row">
+				<view class="nominal">
+					合计
+				</view>
+				<view class="content">
+					￥{{sumPrice|toFixed}}
+				</view>
+			</view>
 		</view>
 		<view class="blck">
 
 		</view>
 		<view class="footer">
 			<view class="settlement">
-				<view class="sum">合计:<view class="money">￥{{sumPrice|toFixed}}</view>
+				<view class="sum">实付金额:<view class="money">￥{{sumPrice|toFixed}}</view>
 				</view>
-				<!-- <view class="btn" @tap="toPay">提交订单</view> -->
+
 			</view>
 		</view>
 	</view>
 </template>
 
 <script>
+	import tuiListCell from "@/components/list-cell/list-cell"
+	import tuiIcon from "@/components/icon/icon"
 	export default {
+		components: {
+			tuiListCell,
+			tuiIcon,
+		},
 		data() {
 			return {
-				id:'',
-				secret:{},
-				type:'',
-				time:'',
-				shipname:'',
+				id: '',
+				ordersn:'',
+				type: '',
+				time: '',
+				shipname: '',
 				buylist: [], //订单列表
 				goodsPrice: 0.0, //商品合计价格
 				sumPrice: 0.0, //用户付款价格
 				freight: 0.00, //运费
+				orderShipSn: '', //快递编号
 				note: '', //备注
 				int: 0, //抵扣积分
 				deduction: 0, //抵扣价格
 				recinfo: {},
-				
+				totalPrice: 0.00,
+				logisticShow: false,
+				oid: '',
+				traces: [] //物流信息
 
 			};
 		},
 		onLoad(option) {
-			this.id=option.id;
-			
+			this.id = option.id;
+			this.getdetails()
 		},
 		onShow() {
-			//页面显示时，加载订单信息
-			uni.getStorage({
-				key:'user',
-				success: (res) => {
-					this.secret=res.data;
-					this.getdetails()
-				}
-			})
-			
 		},
 		onHide() {
 
 		},
 		onBackPress() {
 			//页面后退时候，清除订单信息
-			this.clearOrder();
+			// this.clearOrder();
 		},
 		filters: {
 			toFixed: function(x) {
@@ -176,37 +203,52 @@
 			}
 		},
 		methods: {
-			getdetails(){
-				let data={
-					xopenid: this.secret.openid,
-					order_sn: this.id,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+			getlogistic() {
+				let data = {
+					id: this.oid
+				};
+				this.$xm.post('/Index/getordership', data, (res) => {
+					console.log(res);
+					if (res.Traces.length>0) {
+						this.logisticShow = true;
+						this.traces = res.Traces[res.Traces.length - 1];
+					} else {
+						this.logisticShow = false
+					}
+					this.shipname=res.order_ship;
+				})
+			},
+			getdetails() {
+				let data = {
+					order_sn: this.id
 				}
-				this.$xm.post('/Order/getOrderInfo',data,(res)=>{
-					switch(res.order_state) {
-					     case '6':
-					        res.order_state='已删除'
-					        break;
-					     case '8':
-					        res.order_state='已退款'
-					        break;
-					     default:
-					       
-					} 
-					
-					this.type=res.order_state;
-					this.recinfo=res.contact;
-					res.pro.map(ele=>{
-						ele.pro_sn='http://img.xmvogue.com/thumb/'+ele.pro_sn+'.jpg?x-oss-process=style/300'
-					})					
-					this.buylist=res.pro;					
-					this.time=res.order_time;
-					this.shipname=res.order_ship_name;
-					this.goodsPrice=res.actually_amt;					
-					this.freight=res.order_ship_price;
-					this.sumPrice=Number(this.goodsPrice)+Number(this.freight);
-					this.deduction=res.discount_amt;					
+				this.$xm.post('/Order/getOrderInfo', data, (res) => {
+					switch (res.order_state) {
+						case '6':
+							res.order_state = '已删除'
+							break;
+						case '8':
+							res.order_state = '已退款'
+							break;
+						default:
+					}
+					this.oid = res.id;
+					this.getlogistic();
+					this.type = res.order_state;
+					this.recinfo = res.contact;
+					res.pro.map(ele => {
+						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300'
+					})
+					this.buylist = res.pro;
+					this.time = res.order_time;
+					this.shipname = res.order_ship;
+					this.goodsPrice = res.actually_amt;
+					this.freight = res.order_ship_price;
+					this.sumPrice = Number(this.goodsPrice) + Number(this.freight);
+					this.deduction = res.discount_amt;
+					this.totalPrice = res.order_amt;
+					this.orderShipSn = res.order_ship_sn;
+					this.ordersn=res.order_sn;
 				})
 			},
 			clearOrder() {
@@ -214,48 +256,26 @@
 					key: 'buylist',
 					success: (res) => {
 						this.buylist = [];
-						console.log('remove buylist success');
 					}
 				});
 			},
-			toPay() {
-				//商品列表
-				let paymentOrder = [];
-				let goodsid = [];
-				let len = this.buylist.length;
-				for (let i = 0; i < len; i++) {
-					paymentOrder.push(this.buylist[i]);
-					goodsid.push(this.buylist[i].id);
-				}
-				if (paymentOrder.length == 0) {
-					uni.showToast({
-						title: '订单信息有误，请重新购买',
-						icon: 'none'
-					});
-					return;
-				}
-				//本地模拟订单提交UI效果
-				uni.showLoading({
-					title: '正在提交订单...'
-				})
-				setTimeout(() => {
-					uni.setStorage({
-						key: 'paymentOrder',
-						data: paymentOrder,
-						success: () => {
-							uni.hideLoading();
-							uni.redirectTo({
-								url: "../pay/payment/payment?amount=" + this.sumPrice
-							})
-						}
-					})
-				}, 1000)
-
-			},
-			//选择收货地址
-			selectAddress() {
+			togoods(e){
 				uni.navigateTo({
-					url: '../user/address/address?type=select'
+					url: '../../../goods/goods?gid=' + e.id
+				});
+			},
+			toTrack() {
+				uni.navigateTo({
+					url: '../../../logisticsTrack/track?id=' + this.oid
+				})
+			},
+			toround(e){
+				// uni.showToast({
+				// 	title:'内容正在完善中',
+				// 	icon:'none'
+				// })
+				uni.navigateTo({
+					url: '../refund/refund?id='+e.id+'&ordersn='+this.ordersn
 				})
 			}
 		}
@@ -268,11 +288,48 @@
 		height: 80rpx;
 		line-height: 80rpx;
 		// background-color: #f06c7a;
-		background-image: linear-gradient( 135deg, #f795a2 10%, #FD6585 100%);
+		background-image: linear-gradient(135deg, #f795a2 10%, #FD6585 100%);
 		color: white;
 		padding: 0 40rpx;
 		font-weight: bold;
 		font-size: 45rpx;
+	}
+
+	.tui-flex-box {
+		align-items: center;
+		width: 86%;
+		padding: 20upx 3%;
+		margin: 30upx auto 20upx auto;
+		box-shadow: 0upx 5upx 20upx rgba(0, 0, 0, 0.1);
+		border-radius: 20upx;
+		display: flex;
+
+		.tui-icon-img {
+			width: 44rpx;
+			height: 44rpx;
+			flex-shrink: 0;
+		}
+
+		.tui-logistics {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			padding: 0 24rpx 0 20rpx;
+			box-sizing: border-box;
+		}
+
+		.tui-logistics-text {
+			font-size: 28rpx;
+			line-height: 32rpx;
+		}
+
+		.tui-logistics-time {
+			font-size: 24rpx;
+			line-height: 24rpx;
+			padding-top: 16rpx;
+			color: #666;
+		}
+
 	}
 
 	.addr {
@@ -383,13 +440,27 @@
 						.price {
 							color: #f06c7a;
 						}
-
-						.number {
+						
+						.default {
+							min-width: 70upx;
+							height: 50upx;
+							padding: 0 20upx;
+							border-radius: 50upx;
 							display: flex;
 							justify-content: center;
 							align-items: center;
-
+							font-size: 28upx;
+							margin-left: 20upx;
+							border: solid 1upx #ccc;
+							color: #666;
+							font-size: 26rpx;
 						}
+						// .number {
+						// 	display: flex;
+						// 	justify-content: center;
+						// 	align-items: center;
+
+						// }
 					}
 				}
 			}

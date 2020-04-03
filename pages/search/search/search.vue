@@ -4,7 +4,8 @@
 		<!-- 头部搜索框 -->
 		<view class="header" :style="{position:headerPosition}">
 			<view class="input-box">
-				<input placeholder="熙美诚品" placeholder-style="color:#c0c0c0;" v-model="key" />
+				<input placeholder="熙美诚品" placeholder-style="color:#c0c0c0;" v-model="key"  auto-focus="true" focus="true" confirm-type='search'
+        @confirm="toSearch"/>
 				<view class="icon search"></view>
 			</view>
 			<view class="btn" :class="key.length>1?'active':''">

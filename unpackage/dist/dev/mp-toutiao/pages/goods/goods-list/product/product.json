@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "tarbar": "/components/tarbar/tarbar",
+    "tui-scroll-top": "/components/scroll-top/scroll-top"
+  }
+}

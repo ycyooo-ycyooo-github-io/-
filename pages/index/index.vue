@@ -5,8 +5,7 @@
 		<!-- 顶部导航栏 -->
 		<view v-if="showHeader" class="header" :style="{ position: headerPosition,top:headerTop,opacity: afterHeaderOpacity }">
 			<!-- logo -->
-			<view class="addr" @tap="toStore">
-				<!-- <image src="../../static/img/logo.png" mode="" class="logo"></image> -->
+			<view class="addr">
 				<!-- @tap="toStore" -->
 				<text>{{storeName}}</text>
 				<tui-icon name="position-fill" color="#e84341" size="20"></tui-icon>
@@ -25,7 +24,7 @@
 			<view class="swiper-box" :style="{ height: getheight} ">
 				<swiper circular="true" autoplay="true" @change="swiperChange" v-if="swiperList">
 					<swiper-item v-for="swiper in swiperList" :key="swiper.id">
-						<image :src="swiper.img" @tap="toSwiper(swiper)"></image>
+						<image :src="swiper.img" @tap="toSwiper(swiper)" lazy-load="true"></image>
 					</swiper-item>
 				</swiper>
 				<view class="indicator">
@@ -34,129 +33,104 @@
 			</view>
 		</view>
 		<view class='trait'>
-			<view class='trait-item'>
-				<image src='/static/img/pinpai.png' class='pp-img'></image>品牌保障
-			</view>
-			<view class='trait-item'>
-				<image src='/static/img/baoyou.png' class='pp-img'></image>满59包邮
-			</view>
-			<view class='trait-item'>
-				<image src='/static/img/jisu.png' class='pp-img'></image>急速发货
+			<view class='trait-item' v-for="(item,index) in traitList" :key="index">
+				<image :src='traitListImg[index]' class='pp-img' lazy-load="true"></image>{{item}}
 			</view>
 		</view>
-		<!-- 分隔条 -->
-		<!-- <view class="line"></view> -->
+
 		<!-- 分类列表 -->
+
+		<!-- <text class="line"></text>
+		<tui-countdown :time="seckillTime"
+			 bcolor="#fff" style="margin-left: 10rpx;margin-top: 6rpx;"></tui-countdown> -->
 		<view class="category-list">
-			<view class="category" v-for="(row, index) in categoryList" :key="index" @tap="toCategory(row)">
+			<view class="category" v-for="(row, index) in categoryList" :key="index" @tap="toCategory(row.id)">
 				<view class="img">
 					<image :src="row.icon"></image>
 				</view>
 				<view class="text">{{ row.cate_name }}</view>
 			</view>
 		</view>
-		<!-- 分隔条 -->
-		<!-- <view class="line-one">
-		<image src="http://web.xmcpcn.com/img/banner/4.png" mode=""></image> 
-		<view class="info">
-				<view class="left">
-					<text class="txt">抗击疫情</text>
+		<view class="" v-if="bartainlist.length!=0" @tap="toBargain">
+			<view class="line"></view>
+			<view class="info-three" style="display: flex;justify-content: space-between;align-items: center;">
+				<view class="title">
+					<text class="main" style="font-size: 36rpx;">劲爆砍价</text>
 				</view>
-				<view class="right">
-					<text>一次性购物满<text style="font-weight: 550;font-size: 50upx;">59</text>元包邮！</text>
-				</view>
-			</view> 
-		 </view>
-		<view class="info-two"> 
-		<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/5.png" mode=""></image>
-				<view class="content">
-					<text class="title">复工好物</text>
-					<text class="sub">第二件半价</text>
-					<text class="one-go go">GO></text>
-				</view>
-			</view> 
-		<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/6.png" mode=""></image>
-				<view class="content">
-					<text class="title">暖冬聚会</text>
-					<text class="sub">买一送一</text>
-					<text class="two-go go">GO></text>
-				</view>
-			</view> 
-		<view class="part" @tap="toPet()">
-				<image src="http://web.xmcpcn.com/img/banner/7.png" mode=""></image>
-				<view class="content">
-					<text class="title">宠物好礼</text>
-					<text class="sub">2件8折</text>
-					<text class="three-go go">GO></text>
+				<view class="" style="font-size: 26rpx;color: #b2b2b2;">
+					查看全部<tui-icon name="arrowright" color="#b2b2b2" size="20"></tui-icon>
 				</view>
 			</view>
-			<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/8.png" mode=""></image>
-				<view class="content">
-					<text class="title">3.8女神</text>
-					<text class="sub">66元6.6折</text>
-					<text class="four-go go">GO></text>
-				</view>
-			</view>
-		</view> -->
-		<!-- <view class="line"></view>
-		<view class="info-three" style="display: flex;justify-content: space-between;align-items: center;">
-			<view class="title">
-				<text class="main">限时秒杀</text>
-				<text class="line"></text>
-				<view class="txt" style="display: flex; align-items: center; font-size: 30rpx; ">倒计时:<tui-countdown :time="seckillTime"
-					 bcolor="#fff" :days="true"></tui-countdown>
-				</view>
-			</view>
-			<view class="" style="font-size: 26rpx;color: #b2b2b2;" @tap="toSeckill">
-				查看全部<tui-icon name="arrowright" color="#b2b2b2" size="20"></tui-icon>
-			</view>
-		</view>
-		<scroll-view class="scroll-view" scroll-x="true" @bindscroll="scroll" :scroll-left="scrollLeft">
-			<view class="scroll-view-item" v-for="(item,index) in seckillList" :key="index">
-				<image :src="item.pro_sn" mode="" class="pImg" @tap="toGoods(item)"></image>
-				<text class="pTitle title-one" @tap="toGoods(item)">{{item.pro_name}}</text>
-				<view class="detail">
-					<view class="price" @tap="toGoods(item)">
-						<view class="rel"><text style="font-size: 28rpx;">秒杀价:￥</text>{{item.dis_price}}</view>
-						<view class="del">原价:￥{{item.pro_price}}</view>
+			<scroll-view class="scroll-view" scroll-x="true" @bindscroll="scroll" :scroll-left="scrollLeft">
+				<view class="scroll-view-item" v-for="(item,index) in bartainlist" :key="index">
+					<image :src="item.pro_img" mode="" class="pImg"></image>
+					<text class="pTitle title-one">{{item.pro_name}}</text>
+					<view class="detail">
+						<view class="price">
+							<view class="rel"><text style="font-size: 26rpx;">￥</text>{{item.dis_price}}</view>
+							<!-- <view class="del">￥{{item.pro_price}}</view> -->
+						</view>
+
 					</view>
-					<image src="../../static/img/tabBar/cart-on.png" mode="" class="cart"></image>
 				</view>
-			</view>
-		</scroll-view> -->
-		<!-- <view class="info-four">
-			<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/10.png" mode=""></image>
-				<view class="txt">
-					爆品抢购
-				</view>
-			</view>
-			<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/11.png" mode=""></image>
-				<view class="txt">
-					9.9元秒杀
-				</view>
-			</view>
-			<view class="part">
-				<image src="http://web.xmcpcn.com/img/banner/12.png" mode=""></image>
-				<view class="txt">
-					19.9元秒杀
-				</view>
-			</view>
-		</view> -->
-		<!-- 分隔条 -->
-		<view class="line"></view>
-		<!-- <view class="info-three">
-			<view class="" v-for="(item,index) in actionBanner" :key="index">
+			</scroll-view>
+		</view>
+		<!-- 主题图片 -->
+		<view class="info-three">
+			<view class="" v-for="(item,index) in actionBanner" :key="index" :style="{ height: item.h+'rpx'} ">
 				<image :src="item.src" mode="" class="big" @tap="toPage(item)"></image>
 			</view>
-
-		</view> -->
-
-		<view class="" v-if="specialList" style="padding-top: 20rpx;">
+		</view>
+		<!-- 活动专题一 -->
+		<view class="spec-box">
+			<view class="spec-info">
+				<view class="left" @tap="toSeckill()">
+					<view class="title">
+						<text class="main">限时秒杀</text>
+						<tui-countdown :time="seckillTime" color="#fff" bcolor="#e41f19" bgcolor="#e41f19" colonColor="#e41f19" style="margin-left: 10rpx;margin-top: 6rpx;"></tui-countdown>
+					</view>
+					<view class="product" v-if="seckillList.length>0">
+						<view class="one" v-for="(item,index) in seckillList" :key="index">
+							<image :src="item.pro_sn" mode="" class="pImg"></image>
+							<view class="price">
+								<view class="dis"><text style="font-size: 20rpx;">￥</text>{{item.dis_price | toFixed }}</view>
+								<view class="pro">￥{{item.pro_price | toFixed}}</view>
+							</view>
+						</view>
+					</view>
+					<view class="product" v-else>
+						<image src="../../static/img/seckill.jpg" mode="" style="width: 380rpx; height: 240rpx;"></image>
+					</view>
+				</view>
+				<view class="right" @tap="toGroup()">
+					<view class="title">
+						<text class="main">超值拼团</text>
+						<view class="txt">低至3折
+						</view>
+					</view>
+					<view class="product" v-if="assembleList.length>0">
+						<view class="one" v-for="(item,index) in assembleList" :key="index">
+							<image :src="item.pro_sn" mode="" class="pImg"></image>
+							<view class="price">
+								<view class="dis"><text style="font-size: 20rpx;">￥</text>{{item.dis_price | toFixed}}</view>
+								<view class="pro">￥{{item.pro_price | toFixed}}</view>
+							</view>
+						</view>
+					</view>
+					<view class="product" v-else>
+						<image src="../../static/img/seckill.jpg" mode="" style="width: 380rpx; height: 240rpx;"></image>
+					</view>
+				</view>
+			</view>
+		</view>
+		<!-- 活动专区二 -->
+		<view class="info-four">
+			<view class="part" v-for="(item,index) in imgList" :key="index">
+				<image :src="item.img" mode="" @tap="toProduct(item.key)"></image>
+			</view>
+		</view>
+		<view class="line"></view>
+		<view class="" v-if="specialList.img" style="padding-top: 20rpx;">
 			<view class="info-three" :key="index" :style="{height:specialImgHeight}">
 				<image :src="specialList.img" mode="" class="big" @tap="toPage(specialList)"></image>
 			</view>
@@ -176,7 +150,6 @@
 								</view>
 								<view class="buy" @tap="tobuy(item)">
 									<image src="../../static/img/tabBar/cart-on.png" mode="" class="cart"></image>
-									<text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text>
 								</view>
 							</view>
 						</view>
@@ -209,7 +182,7 @@
 							</view>
 							<view class="buy" @tap="tobuy(item)">
 								<image src="../../static/img/tabBar/cart-on.png" mode="" class="cart"></image>
-								<text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text>
+								<!-- <text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text> -->
 							</view>
 						</view>
 
@@ -220,7 +193,6 @@
 			</view>
 		</view>
 		<!-- 分隔条 -->
-
 		<view class="line"></view>
 		<view class="info-three">
 			<view class="title">
@@ -247,9 +219,8 @@
 							<text style="font-size: 24rpx;">¥</text>{{ item.pro_price }}
 						</view>
 						<view class="buy" @tap="tobuy(item)">
-							<!-- <text>点击抢购</text> -->
 							<image src="../../static/img/tabBar/cart-on.png" mode="" class="cart"></image>
-							<text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text>
+							<!-- <text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text> -->
 						</view>
 					</view>
 				</view>
@@ -277,7 +248,7 @@
 							</view>
 							<view class="buy" @tap="tobuy(item)">
 								<image src="../../static/img/tabBar/cart-on.png" mode="" class="cart"></image>
-								<text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text>
+								<!-- <text class="cartnum" v-if="item.itemcount>0">{{item.itemcount}}</text> -->
 							</view>
 						</view>
 
@@ -292,7 +263,7 @@
 				<image :src="popup.img" mode="" @tap="modalShow=false" :style="{height:popHeight+'px'}"></image>
 			</view>
 		</modal>
-
+		<tui-scroll-top :scrollTop="scrollTop"></tui-scroll-top>
 	</view>
 </template>
 
@@ -307,6 +278,18 @@
 		getSecret
 	} from '@/common/ajax/ajax.js'
 	export default {
+		onShareAppMessage(res) {
+			return {
+				title: '熙美诚品',
+				path: 'pages/index/index',
+				success: (res) => {
+					console.log(res);
+				},
+				fail: (res) => {
+					console.log(res);
+				}
+			}
+		},
 		components: {
 			modal,
 			tuiIcon,
@@ -314,6 +297,8 @@
 		},
 		data() {
 			return {
+				userProvider:'',
+				scrollTop: 0,
 				getheight: '',
 				specialImgHeight: '',
 				storeName: '总部旗舰店',
@@ -336,6 +321,24 @@
 				categoryList: [],
 				// 限时抢购
 				seckillList: [],
+				// 砍价
+				bartainlist: [],
+				// 拼团
+				assembleList: [],
+				// 活动图片
+				imgList: [{
+						img: '../../static/img/01.png',
+						key: '1'
+					},
+					{
+						img: '../../static/img/02.png',
+						key: '2'
+					},
+					{
+						img: '../../static/img/03.gif',
+						key: '3'
+					}
+				],
 				seckillTime: 0,
 				bargainList: [],
 				Promotion: [],
@@ -359,11 +362,19 @@
 				// 向左滑动距离
 				scrollLeft: 0,
 				// 弹窗高度
-				popHeight: 0
-
+				popHeight: 0,
+				addShow: true,
+				// 品牌
+				traitList: [],
+				traitListImg: [
+					'/static/img/pinpai.png',
+					'/static/img/baoyou.png',
+					'/static/img/jisu.png'
+				]
 			};
 		},
 		onPageScroll(e) {
+			this.scrollTop = e.scrollTop;
 			//兼容iOS端下拉时顶部漂移
 			this.headerPosition = e.scrollTop >= 0 ? "fixed" : "absolute";
 			this.headerTop = e.scrollTop >= 0 ? null : 0;
@@ -372,18 +383,66 @@
 		//下拉刷新，需要自己在page.json文件中配置开启页面下拉刷新 "enablePullDownRefresh": true
 		onPullDownRefresh() {
 			this.getgoods();
+			this.getassembleList();
+			this.getBargin();
 			setTimeout(function() {
 				uni.stopPullDownRefresh();
 			}, 1000);
 		},
+
 		onLoad() {
 			this.getbig();
-			this.getgoods();			
+			this.getgoods();
+			this.getassembleList();
 			this.getLocation();
-
+			this.getBargin();
+			this.userProvider=this.$xm.userProvider();
+			if(this.userProvider!='weixin'){
+				uni.login({
+					success: (res) => {
+						console.log(res)
+						if (res.code) {
+							var code = res.code
+							
+							uni.getUserInfo({
+								success: (res) => {
+									console.log(res)
+									let data = {
+										encryptedData: res.encryptedData,
+										iv: res.iv
+									}
+									this.$xm.post('/Index/getUnionid', data, (res) => {
+										const user = uni.getStorageSync('user');
+										user.unionid=res.unionid;
+										uni.setStorage({
+											key: 'user',
+											data: user,
+											success: (res) => {
+												console.log(res);
+											}
+										});
+									})
+									uni.setStorage({
+										key: 'userInfo',
+										data: res.userInfo,
+										success: (res) => {
+											console.log(res);
+										}
+									});
+				
+								},
+								fail: res => {
+									console.log(res)
+									// 获取失败的去引导用户授权 
+								}
+							})
+				
+						} else {}
+					}
+				})
+			}
 		},
 		onShow() {
-			// this.onLoad();
 			console.log(uni.getStorageSync('store'));
 			if (uni.getStorageSync('store')) {
 				this.storeName = uni.getStorageSync('store').store_name;
@@ -392,6 +451,11 @@
 
 			}
 
+		},
+		filters: {
+			toFixed(x) {
+				return parseFloat(x).toFixed(1);
+			}
 		},
 		methods: {
 			// 获取商品总分类
@@ -408,18 +472,10 @@
 					method: 'post',
 					data: data,
 					success: (res) => {
-						console.log(res);
 						this.categoryList = res.data.splice(1, 10);
-						console.log(this.categoryList)
 					}
 				})
 			},
-			// this.$xm.post('/Procate/getBig',data,(res)=>{
-			// 	console.log(res);
-			// 	this.categoryList=res.splice(1,10);
-			// 	console.log(this.categoryList)
-			// })
-
 			getLocation() {
 				uni.getLocation({
 					success: (res) => {
@@ -468,6 +524,33 @@
 					}
 				});
 			},
+			// 获取拼团
+			getassembleList() {
+				this.$xm.post('/groupbuy/getlist', '', (res) => {
+					this.assembleList = res.list.splice(0, 2);
+					this.assembleList.forEach((ele) => {
+						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
+					})
+				})
+			},
+			// 获取砍价
+			getBargin() {
+				this.$xm.post('/bargain/getlist', "", res => {
+					let list = res.list
+					if (list) {
+						list.forEach((ele) => {
+							ele.pro_img = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
+						})
+					}
+					this.bartainlist = list;
+				})
+			},
+			// 跳转到砍价
+			toBargain() {
+				uni.navigateTo({
+					url: '../seckill/bargain/bargain'
+				})
+			},
 			// 获取商品
 			getgoods() {
 				this.swiperList = []
@@ -484,7 +567,8 @@
 					data: data,
 					success: (res) => {
 						let result = res.data;
-						console.log(result);
+						this.traitList = result.trait;
+
 						this.popup = result.popup;
 						this.popHeight = this.popup.height;
 						if (uni.getStorageSync('store')) {
@@ -525,18 +609,22 @@
 							ele.itemcount = 0;
 							if (ele.pro_name.length > 8) {}
 						})
-						result.special.goods.map((ele) => {
-							ele.itemcount = 0;
-							ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
-						})
+						if (result.special.goods) {
+							result.special.goods.map((ele) => {
+								ele.itemcount = 0;
+								ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
+							})
+						}
+
 						this.specialList = result.special;
-						this.seckillList = result.seckill;
+						this.seckillList = result.seckill.next.splice(0, 2);
+						// this.seckillList = result.seckill.next;
 						this.seckillList.forEach((ele) => {
 							ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
 						})
-						this.seckillTime = parseInt(result.seckill[0].etime) - Math.round(new Date() / 1000);
-
-						console.log(this.seckillTime);
+						if (result.seckill.next.length > 0) {
+							this.seckillTime = parseInt(result.seckill.next[0].etime) - Math.round(new Date() / 1000);
+						}
 
 					}
 				})
@@ -563,7 +651,8 @@
 			},
 			//轮播图跳转
 			toSwiper(e) {
-				let action = e.src.split('@')
+				let action = e.src.split('@');
+
 				switch (action[0]) {
 					case 'product':
 						uni.navigateTo({
@@ -588,13 +677,18 @@
 							url: "../webViwe/webViwe?url=" + action[1]
 						})
 						break;
+					case 'cate':
+						uni.setStorageSync('cateSelect', action[1]);
+						uni.switchTab({
+							url: "../tabBar/category/category"
+						})
+						break;
 					default:
 
 				}
 			},
 			// 活动跳转
 			toPage(e) {
-				console.log(e);
 				let action = e.url.split('@');
 				console.log(action)
 				switch (action[0]) {
@@ -617,9 +711,14 @@
 						})
 						break;
 					case 'open':
-						console.log(1)
 						uni.navigateTo({
 							url: '../webViwe/webViwe/webViwe?url=' + action[1]
+						})
+						break;
+					case 'cate':
+						uni.setStorageSync('cateSelect', action[1]);
+						uni.switchTab({
+							url: "../tabBar/category/category"
 						})
 						break;
 					default:
@@ -627,9 +726,14 @@
 				}
 
 			},
+			toProduct(e) {
+				uni.navigateTo({
+					url: '../goods/goods-list/product/product?key=' + e
+				})
+			},
 			//分类跳转
 			toCategory(e) {
-				uni.setStorageSync('cateSelect', e.id);
+				uni.setStorageSync('cateSelect', e);
 				uni.switchTab({
 					url: '../tabBar/category/category'
 				})
@@ -647,16 +751,22 @@
 					url: '../seckill/seckill/seckill'
 				})
 			},
+			// 拼团跳转
+			toGroup() {
+				uni.navigateTo({
+					url: '../seckill/group/group'
+				})
+			},
 			//轮播图指示器
 			swiperChange(event) {
 				this.currentSwiper = event.detail.current;
 			},
 			tobuy(e) {
-				e.itemcount++;
+				// if(this.addShow){
+				// 	e.itemcount++;
+				// }
 				this.id = e.id;
-
 				this.joinCart();
-				// this.toConfirmation();
 			},
 			// 加入购物车
 			joinCart() {
@@ -666,9 +776,16 @@
 				};
 				this.$xm.post('/Cart/add', data, (res) => {
 					let result = res.msg;
-					if (result == '加入购物车成功') {
+					if (res.s == 1) {
+						this.addShow = true;
 						uni.showToast({
-							title: "已加入购物车"
+							title: result
+						});
+					} else if (res.s == 0) {
+						this.addShow = false;
+						uni.showToast({
+							title: result,
+							icon: 'none'
 						});
 					}
 					this.$xm.post('/Cart', '', res => {
@@ -930,19 +1047,19 @@
 		justify-content: space-between;
 
 		padding: 0 45rpx;
-		height: 100rpx;
+		height: 70rpx;
 		background-color: #ffffff;
-		box-shadow: 9px 9px 10px 0px rgba(0, 0, 0, 0.05);
+		// box-shadow: 9px 9px 10px 0px rgba(0, 0, 0, 0.05);
 
 		.trait-item {
 			display: flex;
-			font-size: 24rpx;
+			font-size: 22rpx;
 			align-items: center;
 			color: #222222;
 
 			image {
-				width: 35upx;
-				height: 35upx;
+				width: 30upx;
+				height: 30upx;
 				margin-right: 10rpx;
 			}
 		}
@@ -1108,23 +1225,27 @@
 	.scroll-view {
 		white-space: nowrap;
 		width: 100%;
-		padding-left: 20upx;
+
+		// padding-left: 20upx;
+		.scroll-view-item:first-child {
+			margin-left: 20rpx;
+		}
 
 		.scroll-view-item {
 			display: inline-block;
-			width: 40%;
+			width: 30%;
 			text-align: left;
 			padding: 10rpx 20upx;
 			font-size: 24upx;
 
 			.pImg {
 				width: 100%;
-				height: 300rpx;
+				height: 230rpx;
 				margin-bottom: 16upx;
 			}
 
 			.pTitle {
-				font-size: 30rpx !important;
+				font-size: 28rpx !important;
 			}
 
 			.detail {
@@ -1140,7 +1261,7 @@
 
 					.rel {
 						color: #e65339;
-						font-size: 32rpx;
+						font-size: 28rpx;
 						font-weight: 600;
 					}
 
@@ -1157,6 +1278,97 @@
 					text-align: center;
 					background-color: #1AAD19;
 					border-radius: 50%;
+				}
+			}
+		}
+	}
+
+	.spec-box {
+		padding-top: 10rpx;
+
+		.spec-info {
+			display: flex;
+			align-items: center;
+			padding: 0 4%;
+			border-bottom: 1px solid #EEEEEE;
+			margin-bottom: 20rpx;
+
+			.left,
+			.right {
+				width: 50%;
+
+				.product {
+					display: flex;
+					justify-content: space-around;
+					align-items: center;
+					padding: 20rpx 10rpx;
+					padding-top: 0;
+
+					.one {
+
+						.pImg {
+							width: 140rpx;
+							height: 140rpx;
+						}
+
+						.price {
+							display: flex;
+							justify-content: space-between;
+							align-items: baseline;
+							padding: 20rpx 0;
+
+							.dis {
+								font-size: 26rpx;
+								color: red;
+							}
+
+							.pro {
+								font-size: 22rpx;
+								color: #B2B2B2;
+								text-decoration: line-through;
+							}
+						}
+					}
+				}
+
+				.title {
+					display: flex;
+					justify-content: left;
+					align-items: center;
+					padding: 30rpx 0;
+					height: 40rpx;
+
+					.main {
+						font-size: 30rpx;
+						color: #444444;
+						font-family: SourceHanSansCN-Regular;
+					}
+
+					.tui-countdown-item {
+						width: 35rpx !important;
+						height: 35rpx !important;
+						border-radius: 50%;
+					}
+
+					.txt {
+						font-size: 24rpx;
+						letter-spacing: 1rpx;
+						color: #999999;
+						padding-left: 20rpx;
+					}
+				}
+			}
+
+			.left {
+				border-right: 1px solid #EEEEEE;
+			}
+
+			.right {
+
+
+				.title {
+					align-items: baseline;
+					padding-left: 30rpx;
 				}
 			}
 		}
@@ -1211,8 +1423,8 @@
 			height: 180rpx;
 
 			image {
-				width: 220rpx;
-				height: 180rpx;
+				width: 100%;
+				height: 200rpx;
 			}
 
 			.txt {
@@ -1250,7 +1462,6 @@
 				padding-bottom: 0;
 
 				.name {
-
 					font-family: SourceHanSansCN-Medium;
 					font-size: 30rpx;
 					color: #323232;

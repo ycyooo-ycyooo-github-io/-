@@ -34,7 +34,7 @@
 			//数字框宽度
 			width: {
 				type: Number,
-				default: 30
+				default: 50
 			},
 			//数字框高度
 			height: {
@@ -54,7 +54,8 @@
 			//数字框字体大小
 			size: {
 				type: Number,
-				default: 30
+				default: 23,
+				
 			},
 			//数字框字体颜色
 			color: {
@@ -69,7 +70,7 @@
 			//冒号大小
 			colonSize: {
 				type: Number,
-				default: 34
+				default: 23
 			},
 			//冒号颜色
 			colonColor: {

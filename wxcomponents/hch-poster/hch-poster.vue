@@ -115,7 +115,7 @@
 
 				// 如果数组长度大于2，则截取前两个
 				if (row.length > lineNumber) {
-					console.log(row.length,lineNumber)
+					console.log(row.length, lineNumber)
 					var rowCut = row.slice(0, lineNumber);
 					console.log(row);
 					var rowPart = row[0];
@@ -141,7 +141,7 @@
 
 
 			// 生成海报
-			createCanvasImage() {				
+			createCanvasImage() {
 				uni.showLoading({
 					title: '海报生成中...'
 				})
@@ -165,7 +165,7 @@
 				this.roundRect(ctx, 50, 40, (this.phoneW - 100), (340) * scaleH, 10, '#f7f7f7', '#f7f7f7'); //绘制海报圆角背景 上半截灰色的
 				ctx.restore();
 				url = 'https' + url.slice(4, url.length);
-				
+
 				//将网络图片转成本地路径 商品图片
 				uni.getImageInfo({
 					src: url,
@@ -257,7 +257,7 @@
 						'content-type': 'application/x-www-form-urlencoded'
 					},
 					data: {
-						path: code, //想要生成小程序码的页面地址
+						path: 'pages/goods/goods?gid=' + id, //想要生成小程序码的页面地址
 						id: id
 
 					},
@@ -302,14 +302,23 @@
 				// 长按/扫描识别查看商品end
 				//绘制保存按钮
 				ctx.save();
-				this.roundRect(ctx,(this.phoneW-160)/2,(this.phoneH-140),160, 36,18,'#ff3600','#ff6a00','btn')
-				ctx.restore(); 
+				this.roundRect(ctx, (this.phoneW - 160) / 2, (this.phoneH - 55), 160, 36, 18, '#ff3600', '#ff6a00', 'btn')
+				ctx.restore();
 				ctx.setFontSize(14)
-				ctx.setFillStyle('#fff')//文字颜色：默认黑色
+				ctx.setFillStyle('#fff') //文字颜色：默认黑色
 				ctx.font = 'normal bold 14px sans-serif';
-				ctx.fillText('保存图片', (_this.phoneW-58)/2, (this.phoneH-118),58);
+				ctx.fillText('保存图片', (_this.phoneW - 58) / 2, (this.phoneH - 33), 58);
 				//绘制保存按钮 end
 				uni.hideLoading();
+				// ctx.save();
+				// this.roundRect(ctx, (this.phoneW - 160) / 2, (this.phoneH - 140), 160, 36, 18, '#ff3600', '#ff6a00', 'btn')
+				// ctx.restore();
+				// ctx.setFontSize(14)
+				// ctx.setFillStyle('#fff') //文字颜色：默认黑色
+				// ctx.font = 'normal bold 14px sans-serif';
+				// ctx.fillText('保存图片', (_this.phoneW - 58) / 2, (this.phoneH - 118), 58);
+				// //绘制保存按钮 end
+				// uni.hideLoading();
 			},
 
 			// 保存到系统相册
@@ -321,7 +330,7 @@
 				// 1-把画布转化成临时文件
 				uni.canvasToTempFilePath({
 					x: 50,
-					y: 40,
+					y: 0,
 					width: (this.phoneW - 100), // 画布的宽
 					height: (this.phoneH - 120), // 画布的高
 					destWidth: (this.phoneW - 100) * 5,
@@ -331,7 +340,7 @@
 						// 2-保存图片至相册
 						uni.saveImageToPhotosAlbum({
 							filePath: res.tempFilePath,
-							success(res2) {								
+							success(res2) {
 								uni.showToast({
 									title: '图片保存成功!',
 									duration: 2000
@@ -402,7 +411,7 @@
 			width: 320rpx;
 			height: 72rpx;
 			position: absolute;
-			bottom: 190rpx;
+			bottom: 20rpx;
 			left: 215rpx;
 			z-index: 16;
 		}

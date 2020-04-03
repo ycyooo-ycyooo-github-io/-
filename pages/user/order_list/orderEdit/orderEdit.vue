@@ -68,7 +68,6 @@
 		data() {
 			return {
 				unionid: '',
-				secret: {},
 				editType: 'edit',
 				id: '',
 				name: '',
@@ -86,16 +85,9 @@
 			};
 		},
 		onLoad(option) {
-
 			if (option) {
-				uni.getStorage({
-					key: 'user',
-					success: (res) => {
-						this.secret = res.data;
-						this.sn = option.sn
-						this.loadData(option.sn)
-					}
-				})
+				this.sn = option.sn
+				this.loadData(option.sn)
 			}
 
 
@@ -106,10 +98,7 @@
 			// 获取订单详情
 			loadData(sn) {
 				let params = {
-					order_sn: sn,
-					xopenid: this.secret.openid,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+					order_sn: sn
 				}
 				this.$xm.post("/Order/getOrderInfo", params, eve => {
 					var res = eve.contact;
@@ -133,9 +122,6 @@
 			save() {
 				console.log(this.isDefault);
 				let data = {
-					xopenid: this.secret.openid,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp,
 					address: this.address,
 					country: "中国",
 					id: this.id,
@@ -147,8 +133,6 @@
 					town: this.region[2],
 					zip: ""
 				};
-
-
 				if (!data.name) {
 					uni.showToast({
 						title: '请输入收件人姓名',

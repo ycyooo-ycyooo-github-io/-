@@ -4,10 +4,7 @@
 			<view class="input-box">
 				<input  placeholder="熙美诚品" placeholder-style="color:#c0c0c0;"  v-model="key"  @blur="toSearch()"/>
 				<view class="icon search"></view>
-			</view>
-			<!-- <view class="btn" :class="key.length>1?'active':''">
-				<button >搜索</button>
-			</view> -->
+			</view>			
 		</view>	
 		<view class="place">
 			
@@ -31,10 +28,21 @@
 
 <script>
 	export default {
+		onShareAppMessage(res) {
+			return {
+				title: this.key,
+				path: 'pages/goods/goods-list/goods-list?key='+this.key,
+				success: (res) => {
+					console.log(res);
+				},
+				fail: (res) => {
+					console.log(res);
+				}
+			}
+		},
 		data() {
 			return {
 				key:'',
-				secret:'',
 				goodsList:[],
 				loadingText:"正在加载中...",
 				headerTop:"0px",
@@ -54,13 +62,7 @@
 			uni.setNavigationBarTitle({
 				title: option.key
 			});
-			uni.getStorage({
-				key:"user",
-				success: (res) => {
-					this.secret=res.data;
-					this.reload();
-				}
-			})
+			this.reload();
 			//兼容H5下排序栏位置
 			// #ifdef H5
 				//定时器方式循环获取高度为止，这么写的原因是onLoad中head未必已经渲染出来。
@@ -83,6 +85,7 @@
 		},
 		//下拉刷新，需要自己在page.json文件中配置开启页面下拉刷新 "enablePullDownRefresh": true
 		onPullDownRefresh() {
+			this.goodsList=[]
 		    setTimeout(()=>{
 				this.reload();
 		        uni.stopPullDownRefresh();
@@ -100,24 +103,20 @@
 			}
 		},
 		methods:{
-			reload(){
+			reload(){				
 				let data={
-					key: this.key,
-					store: 10001,
-					xopenid: this.secret.openid,
-					pageid: this.pageid,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+					key: this.key,					
+					pageid: this.pageid
 				}
 				this.$xm.post('/Product/search',data,(res)=>{
 					if(res.count==0){
 						this.loadingText="没有找到您要搜索的商品！";
-					}else{
-						this.goodsList=res.prolist;
-						this.goodsList.map(ele=>{
+					}else{						
+						res.prolist.map(ele=>{
 							ele.pro_sn='http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
 							ele.pro_name=ele.pro_name.slice(0,15)+'...'
 						})
+						this.goodsList=this.goodsList.concat(res.prolist)
 						this.pageCount=res.count;
 						if(this.pageCount==1){
 							this.loadingText='到底了'
@@ -142,42 +141,16 @@
 			joinCart(e){
 				let data={
 					proid: e.id,
-					pronum: 1,
-					xopenid: this.secret.openid,
-					store: 10001,
-					secret: this.secret.secret,
-					timestamp: this.secret.timestamp
+					pronum: 1
 				}
 				this.$xm.post('/Cart/add',data,(res)=>{					
 					let result=res.msg;
-					if(result=='加入购物车成功'){
-						uni.showToast({
-							title: "已加入购物车"
-						});
-					}
-					
+					uni.showToast({
+						title: result
+					});					
 				})				
 			},
-			//排序类型
-			select(index){
-				let tmpTis = this.orderbyList[index].text+"排序 "
-				if(this.orderbyList[index].orderbyicon){
-					let type = this.orderbyList[index].orderby==0?'升序':'降序';
-					if(this.orderbyList[index].selected){
-						type = this.orderbyList[index].orderby==0?'降序':'升序';
-						this.orderbyList[index].orderby = this.orderbyList[index].orderby==0?1:0;
-					}
-					tmpTis+=type
-				}
-				this.orderbyList[index].selected = true;
-				let len = this.orderbyList.length;
-				for(let i=0;i<len;i++){
-					if(i!=index){
-						this.orderbyList[i].selected = false;
-					}
-				}
-				uni.showToast({title:tmpTis,icon:"none"});
-			}
+			
 		}
 		
 	}

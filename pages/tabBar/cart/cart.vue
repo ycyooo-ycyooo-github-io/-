@@ -16,13 +16,18 @@
 				</view> -->
 			</view>
 			<view class="tui-edit-goods">
-				<view>购物车共<text class="tui-goods-num">{{count || 0}}</text>件商品</view>
-				<view class="msg" style="color: #e41f19;">
+				<view class="" style="display: flex;justify-content: space-between;align-items: center;">
+					<view>购物车共<text class="tui-goods-num">{{count || 0}}</text>件商品</view>
+					<view>
+						<tui-button type="danger" :shadow="true" :plain="true" shape="circle" width="160rpx" height="60rpx" :size="24"
+						 @click="delGoods">删除</tui-button>
+					</view>
+				</view>
+
+				<view class="msg" style="color: #e41f19;padding-top: 10rpx;">
 					{{msg}}
 				</view>
-				<!-- <view>
-					<tui-button type="danger" :shadow="true" :plain="true" shape="circle" width="160rpx" height="60rpx" :size="24" @click="delGoods">删除</tui-button>
-				</view> -->
+
 			</view>
 
 		</view>
@@ -34,12 +39,11 @@
 			<view class="tui-cart-cell  tui-mtop" v-for="(item,index) in dataList" :key="index">
 				<tui-swipe-action :actions="actions" @click="handlerButton" :params="item">
 					<template v-slot:content>
-
 						<view class="tui-goods-item">
 							<label class="tui-checkbox">
-								<!-- <checkbox color="#fff" :checked="itemchecked" :value="item.proid"></checkbox> -->
+								<checkbox color="#fff" :checked="item.checked" :value="item.proid" v-if="userProvider=='weixin'"></checkbox>
+								<checkbox :checked="item.checked" :value="item.proid" v-else></checkbox>
 							</label>
-							<!-- <imglazy :url="item.pro_img" class="tui-goods-img"></imglazy> -->
 							<image :src="item.pro_img" class="tui-goods-img" @tap="toGood(item)" />
 							<view class="tui-goods-info">
 								<view class="tui-goods-title" @tap="toGood(item)">
@@ -51,9 +55,13 @@
 								</view>
 								<view class="tui-price-box">
 									<view class="tui-goods-price" v-if="item.dis_price" @tap="toGood(item)">¥{{ item.dis_price }}
-										<text class="dis_price" v-if="item.dis_price">{{ item.pro_price }}</text>
+										<text class="dis_price">{{ item.pro_price }}</text>
 									</view>
-									<view class="tui-goods-price" v-else>¥{{ item.pro_price }}
+									<view class="tui-goods-price" v-if="item.sec_price" @tap="toGood(item)" style="display: flex;justify-content: left;flex-wrap: wrap;align-items: center;">
+										¥{{ item.sec_price }}
+										<text class="dis_price">{{ item.pro_price }}</text>
+									</view>
+									<view class="tui-goods-price" v-if="!item.dis_price && !item.sec_price">¥{{ item.pro_price }}
 
 									</view>
 									<view class="tui-scale">
@@ -77,8 +85,8 @@
 			<view class="tui-product-container">
 				<block v-for="(item,index) in productList" :key="index" v-if="(index+1)%2!=0">
 					<!--商品列表-->
-					<view class="tui-pro-item" hover-class="hover" :hover-start-time="150" >
-						<image :src="item.pro_sn" class="tui-pro-img" mode="widthFix"  @tap="detail(item)"/>
+					<view class="tui-pro-item" hover-class="hover" :hover-start-time="150">
+						<image :src="item.pro_sn" class="tui-pro-img" mode="widthFix" @tap="detail(item)" />
 						<view class="tui-pro-content">
 							<view class="tui-pro-tit title-one" @tap="detail(item)">{{item.pro_name}}</view>
 							<view class="bottom-info">
@@ -113,24 +121,26 @@
 		<!--tabbar-->
 		<view class="tui-tabbar">
 			<view class="tui-checkAll">
-				<!-- <checkbox-group @change="checkboxChange">
+				<checkbox-group @change="checkboxChange">
 					<label class="tui-checkbox">
-						<checkbox color="#fff" :checked="allchecked" ></checkbox>
+						<checkbox color="#fff" :checked="allchecked" v-if="userProvider=='weixin'"></checkbox>
+						<checkbox :checked="allchecked" v-else></checkbox>
 						<text class="tui-checkbox-pl">全选</text>
 					</label>
-				</checkbox-group> -->
+				</checkbox-group>
 				<view class="tui-total-price">合计:<text class="tui-bold">￥{{allprice || 0}}</text><text style="font-size: 24upx;color: #000000; text-decoration: line-through;padding-left: 10rpx
 				;">{{totalMoney || 0}}</text>
 				</view>
 			</view>
 			<view>
-				<tui-button v-if="userInfo" width="200rpx" height="70rpx" :size="30" type="danger" shape="circle" @click="btnPay">去结算</tui-button>
-				<button v-else type="warn" open-type="getUserInfo" @getuserinfo="getuserinfo" withCredentials="true" style="height: 70rpx;line-height: 70rpx;font-size: 30rpx;border-radius: 50rpx;
-">去结算</button>
+				<tui-button v-if="userInfo" width="200rpx" height="70rpx" :size="30" type="danger" shape="circle" @click="btnPay"
+				 :class="userProvider=='weixin' ? '': 'tt_login_btn'">去结算</tui-button>
+				<button v-if="!userInfo" type="warn" open-type="getUserInfo" @getuserinfo="getuserinfo" withCredentials="true" :class="userProvider=='weixin' ? 'wx_login_btn': 'tt_login_btn'">去结算</button>
 			</view>
 		</view>
 		<!--加载loadding-->
 		<tui-loadmore :visible="loadding" :index="3" type="red"></tui-loadmore>
+		<tui-scroll-top :scrollTop="newscrollTop"></tui-scroll-top>
 	</view>
 </template>
 
@@ -156,6 +166,7 @@
 		},
 		data() {
 			return {
+				userProvider: '微信',
 				store: '',
 				storeName: '总部旗舰店',
 				tagIndex: 1,
@@ -181,8 +192,9 @@
 				count: 0,
 				// 总金额
 				totalMoney: 0,
+				totalPrice: 0,
 				// 全选
-				allchecked: false,
+				allchecked: true,
 				// 单项：
 				itemchecked: false,
 				// 选择的商品
@@ -194,11 +206,16 @@
 				msg: '',
 				// 支付金额
 				allprice: 0,
-				scrollTop: 0
-
+				scrollTop: 0,
+				newscrollTop: 0,
+				productIdList: [], //选择的商品Id
+				goodsList: [],
+				couponid: '',
+				pronum: 1
 			}
 		},
 		onPageScroll(e) {
+			this.newscrollTop = e.scrollTop;
 			if (e.scrollTop >= 0) {
 				this.headerPosition = "fixed";
 			} else {
@@ -206,15 +223,16 @@
 			}
 		},
 		onLoad() {
-			this.secret = uni.getStorageSync('user');			
-			this.getproList()
-			
+			this.userProvider = this.$xm.userProvider();			
+			console.log(this.userProvider);
 		},
 		onShow() {
-			this.tagIndex=1
+			this.allchecked = true;
+			this.tagIndex = 1
 			this.store = 10001;
-			this.changeData();			
-			let code = uni.getStorageSync('store').store_code;			
+			this.changeData();
+			this.getproList();
+			let code = uni.getStorageSync('store').store_code;
 			if (code == 10001) {
 				this.showTag = false;
 			} else if (typeof(code) == 'undefined') {
@@ -226,14 +244,13 @@
 				key: 'userInfo',
 				success: (res) => {
 					console.log(res);
-					this.userInfo = res.data;
+					this.userInfo = res.data;					
 				}
 			});
 
 		},
 		methods: {
 			toGood(e) {
-				console.log(e);
 				uni.navigateTo({
 					url: '../../goods/goods?gid=' + e.proid
 				})
@@ -244,165 +261,34 @@
 					this.store = 10001;
 					this.storeName = '总部旗舰店'
 					this.changeData();
-					this.productList=[];
-					this.changeProlist()
+					this.productList = [];
+					this.getproList()
 				} else {
 					this.store = uni.getStorageSync('store').store_code;
 					this.storeName = uni.getStorageSync('store').store_name;
 					this.changeData();
-					this.productList=[];
-					this.changeProlist()
+					this.productList = [];
+					this.getproList()
 				}
 
-			},
-			changeProlist() {
-				ajax({
-					url: '/Cart/guess',
-					data: {
-						xopenid: this.secret.openid,
-						sessionKey: this.secret.sessionKey,
-						secret: this.secret.secret,
-						timestamp: this.secret.timestamp,
-						store: this.store
-					},
-					method: 'post',
-					success: (res) => {						
-						let data = res.data.data;
-						if (data.length == 0) {
-							this.productList = [];
-						} else {
-							data.map(ele => {
-								ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
-								
-							});							
-							if(data.length=20){
-								this.productList = this.productList.concat(data);
-							}else{
-								this.productList=data;
-							}						
-						}
-
-					},
-					error: () => {}
-				})
 			},
 			changeData() {
-				ajax({
-					url: '/Cart',
-					data: {
-						xopenid: this.secret.openid,
-						sessionKey: this.secret.sessionKey,
-						unionid: '',
-						secret: this.secret.secret,
-						timestamp: this.secret.timestamp,
-						store: this.store
-					},
-					method: 'post',
-					success: (res) => {
-						let goodsList = res.data.prolist;
-						this.$xm.requestImg(goodsList);
-						this.dataList = goodsList;
-						this.count = res.data.count
-						this.totalMoney = res.data.allprice;
-						this.tips = res.data.tips;
-						this.getmatchOptimals();
-						if (this.count !== null) {
-							this.count = this.count.toString()
-							uni.setTabBarBadge({
-								index: 2,
-								text: this.count
-							})
-						} else {
-							uni.removeTabBarBadge({
-								index: 2,
-							})
-						}
-						uni.setStorage({
-							key: 'cart',
-							data: this.count,
-							success: (res) => {
-								console.log(res);
-							}
-						})
-					},
-					error: () => {}
-				})
-			},
-			getuserinfo() {
-				// wx登录
-				uni.login({
-					success: (res) => {
-						if (res.code) {
-							var code = res.code
-							uni.getUserInfo({
-								success: (res) => {
-									this.userInfo = res.userInfo;
-									let params = {
-										encryptedData: res.encryptedData,
-										iv: res.iv,
-									}
-									this.$xm.post('/Index/getUnionid', params, (res) => {
-										uni.setStorage({
-											key: 'unionid',
-											data: res.unionid,
-											success: (res) => {
-												console.log(res);
-											}
-										});
-									})
-									uni.setStorage({
-										key: 'userInfo',
-										data: res.userInfo,
-										success: (res) => {
-											console.log(res);
-										}
-									});
-									uni.navigateTo({
-										url: '../../order/confirmation?store='+this.store
-									})
-								},
-								fail: res => {
-									// 获取失败的去引导用户授权 
-								}
-							})
-
-						} else {}
-					}
-				})
-			},
-			// 获取优惠活动
-			getmatchOptimals() {
 				let data = {
-					money: this.totalMoney
+					store: this.store
 				}
-				this.$xm.post('/Coupon/match_optimals', data, res => {
-					this.msg = res.data.msg;
-					this.allprice = res.data.money;
-
-
-				})
-
-			},
-			// 获取猜你喜欢
-			getproList() {
-				this.$xm.post('/Cart/guess', '', (res) => {
-					res.data.map(ele => {
-						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
-						
-					});
-					this.productList = this.productList.concat(res.data);
-
-
-				})
-			},
-			// 获取购物车
-			loadData() {
-				this.$xm.post('/Cart', '', res => {
-					let goodsList = res.prolist;
-					this.$xm.requestImg(goodsList);
-					this.dataList = goodsList;
-					this.count = res.count
+				this.$xm.post('/Cart', data, res => {
+					this.dataList = res.prolist;
+					this.$xm.requestImg(this.dataList);
+					let totalAll = []
+					this.dataList.forEach(ele => {
+						ele.checked = true;
+						totalAll.push(ele.proid + '/' + ele.pronum)
+					})
+					this.goodsList = totalAll
+					this.totalPrice = res.allprice;
 					this.totalMoney = res.allprice;
+					this.allchecked = true;
+					this.count = res.count;
 					this.tips = res.tips;
 					this.getmatchOptimals();
 					if (this.count !== null) {
@@ -426,16 +312,149 @@
 
 				})
 			},
+			getuserinfo() {
+				// 登录
+				uni.login({
+					provider: this.userProvider,
+					success: (res) => {
+						console.log(res)
+						if (res.code) {
+							var code = res.code
+							uni.getUserInfo({
+								success: (res) => {
+									this.userInfo = res.userInfo;
+									let params = {
+										encryptedData: res.encryptedData,
+										iv: res.iv,
+									}
+									this.$xm.post('/Index/getUnionid', params, (res) => {
+										const user = uni.getStorageSync('user');
+										user.unionid = res.unionid;
+										uni.setStorage({
+											key: 'user',
+											data: user,
+											success: (res) => {
+												console.log(res);
+											}
+										});
+									})
+									uni.setStorage({
+										key: 'userInfo',
+										data: res.userInfo,
+										success: (res) => {
+											console.log(res);
+										}
+									});
+									uni.navigateTo({
+										url: '../../order/confirmation?store=' + this.store
+									})
+								},
+								fail: res => {
+									// 获取失败的去引导用户授权 
+								}
+							})
+
+						} else {}
+					},
+					fail: (res) => {
+						console.log(res)
+					}
+				})
+			},
+
+			// 获取优惠活动
+			getmatchOptimals() {
+				console.log(this.goodsList)
+				let data = {
+					goods_list: this.goodsList
+				}
+				this.$xm.post('/Coupon/match_optimalss', data, res => {
+					if (res) {
+						this.msg = res.data.msg;
+						this.allprice = res.data.money;
+						if (res.data.type == 2) {
+							this.couponid = res.id
+						}
+					} else {
+						this.allprice = 0;
+					}
+
+				})
+
+			},
+			getcalcmoney() {
+				let data = {
+					goods_list: this.goodsList,
+					store: this.store
+				}
+				this.$xm.post('/Cart/calcmoney', data, (res) => {
+					this.totalMoney = res.money
+				})
+			},
+			// 获取猜你喜欢
+			getproList() {
+				let data = {
+					store: this.store
+				}
+				this.$xm.post('/Cart/guess', data, (res) => {
+					res.data.map(ele => {
+						ele.pro_sn = 'http://img.xmvogue.com/thumb/' + ele.pro_sn + '.jpg?x-oss-process=style/300';
+					});
+					this.productList = this.productList.concat(res.data);
+				})
+			},
 			itemchange(e) {
-				console.log(e);
+				this.productIdList = e.detail.value;
+				if (this.productIdList.length == this.dataList.length) {
+					this.allchecked = true;
+					let arr1 = []
+					this.dataList.forEach(ele => {
+						arr1.push(ele.proid + '/' + ele.pronum)
+					})
+					this.goodsList = arr1;
+					this.getcalcmoney();
+					this.getmatchOptimals()
+				} else {
+					this.allchecked = false;
+					let idList = this.productIdList.toString();
+					let arr2 = [];
+					this.dataList.forEach(ele => {
+						if (idList.indexOf(ele.proid) !== -1) {
+							arr2.push(ele.proid + '/' + ele.pronum)
+							ele.checked = true;
+						} else {
+							ele.checked = false;
+						}
+					})
+					this.goodsList = arr2;
+					this.getcalcmoney();
+					this.getmatchOptimals()
+				}
+
+
 			},
 			checkboxChange(e) {
 				this.allchecked = !this.allchecked;
 				if (this.allchecked) {
-					this.itemchecked = true;
+					this.totalMoney = this.totalPrice;
+					let allarr = [];
+					this.dataList.forEach(ele => {
+						ele.checked = true;
+						allarr.push(ele.proid + '/' + ele.pronum)
+					})
+					this.goodsList = allarr;
+					this.productIdList = this.dataList.map(ele => {
+						return ele.proid
+					})
 				} else {
-					this.itemchecked = false;
+					this.dataList.forEach(ele => {
+						ele.checked = false
+					})
+					this.goodsList = [];
+					this.productIdList = [];
+					this.totalMoney = 0;
 				}
+				this.getmatchOptimals()
 			},
 			changeNum(e) {
 				this.delId = e.index;
@@ -476,12 +495,15 @@
 				let params = {
 					act: this.act,
 					id: this.delId,
-
 				}
 				this.$xm.post('/Cart/ajax', params, res => {
-					if (res.msg == '操作成功') {
-						// this.loadData()();
+					if (res.s == 1) {
 						this.changeData()
+					} else if (res.s == 0) {
+						uni.showToast({
+							title: res.msg,
+							icon: 'none'
+						})
 					}
 				})
 			},
@@ -489,25 +511,55 @@
 			joinCart(e) {
 				let params = {
 					proid: e.id,
-					pronum: 1,
-					store:this.store
+					pronum: this.pronum,
+					store: this.store
 				};
 				this.$xm.post('/Cart/add', params, (res) => {
 					let result = res.msg;
-					if (result == '加入购物车成功') {
+					if (res.s == 1) {
 						uni.showToast({
-							title: "已加入购物车"
+							title: result
 						});
-						// this.loadData()();
 						this.changeData()
+					} else if (res.s == 0) {
+						uni.showToast({
+							title: result,
+							icon: 'none'
+						});
 					}
 				})
 
 			},
-			delGoods: function() {
-				// #ifdef H5 || MP
-				this.isEdit = !this.isEdit;
-				// #endif
+			delGoods() {
+				if (this.allchecked) {
+					this.productIdList = this.dataList.map(ele => {
+						return ele.proid
+					})
+				}
+				this.delId = this.productIdList;
+				if (this.delId.length > 0) {
+					uni.showModal({
+						title: '确定删除商品吗？',
+						content: '',
+						confirmText: '取  消',
+						cancelColor: '#b2b2b2',
+						confirmText: '确  定',
+						confirmColor: '#2c2c2c',
+						success: (res) => {
+							if (res.confirm) {
+								this.act = 'del';
+								this.del();
+							}
+						},
+					})
+				} else {
+					uni.showToast({
+						title: '没有选择要删除的商品！',
+						icon: 'none'
+					})
+				}
+
+
 			},
 			detail(e) {
 				uni.navigateTo({
@@ -520,25 +572,49 @@
 				})
 			},
 			btnPay() {
-				console.log(this.store);
-				uni.navigateTo({
-					url: '../../order/confirmation?store='+this.store
-				})
-				// uni.navigateTo({
-				// 	url: '../../order/confirmation'
-				// })
+				if (this.allchecked) {
+					this.productIdList = this.dataList.map(ele => {
+						return ele.proid
+					})
+				}
+				let data = {
+					goods_list: this.productIdList,
+					store: this.store
+				}
+				console.log(this.productIdList);
+				if (this.productIdList.length > 0) {
+					this.$xm.post('/Cart/xiangou', data, (res) => {
+						if (res.s == 0) {
+							uni.showToast({
+								title: res.msg,
+								icon: 'none'
+							})
+						} else {
+							uni.navigateTo({
+								url: '../../order/confirmation?store=' + this.store + '&goods_list=' + this.productIdList
+							})
+						}
+					})
+
+				} else {
+					uni.showToast({
+						title: '没有选择要结算的商品！',
+						icon: 'none'
+					})
+				}
+
+
 			}
 		},
 
 		onPullDownRefresh() {
-			// this.loadData()
 			this.changeData()
 			setTimeout(() => {
 				uni.stopPullDownRefresh()
 			}, 200)
 		},
 		onReachBottom() {
-			this.changeProlist();
+			this.getproList();
 			setTimeout(() => {
 				uni.stopPullDownRefresh()
 			}, 200)
@@ -567,7 +643,7 @@
 		// height: 100upx;
 		position: fixed;
 		top: 0;
-		z-index: 10000;
+		z-index: 100000;
 		background-color: #fff;
 		/*  #ifdef  APP-PLUS  */
 		top: var(--status-bar-height);
@@ -579,8 +655,8 @@
 			overflow: hidden;
 			padding: 24rpx 30rpx 20rpx 30rpx;
 			box-sizing: border-box;
-			display: flex;
-			justify-content: space-between;
+			// display: flex;
+			// justify-content: space-between;
 			align-items: center;
 			color: #333;
 			font-size: 26rpx;
@@ -657,7 +733,7 @@
 
 	.placeTwo {
 		background-color: #ffffff;
-		height: 170rpx;
+		height: 250rpx;
 		/*  #ifdef  APP-PLUS  */
 		margin-top: var(--status-bar-height);
 		/*  #endif  */
@@ -984,7 +1060,7 @@
 	.tui-pro-tit {
 		color: #2e2e2e;
 		font-size: 26rpx;
-		
+
 	}
 
 	.bottom-info {
@@ -1021,5 +1097,24 @@
 		padding-top: 10rpx;
 		font-size: 24rpx;
 		color: #656565;
+	}
+
+	// 字节跳动
+	.tt_login_btn {
+		height: 70rpx;
+		line-height: 70rpx;
+		font-size: 30rpx;
+		border-radius: 50rpx;
+		background: #e41f19;
+		color: #fff;
+		width: 200rpx;
+	}
+
+	// 微信
+	.wx_login_btn {
+		height: 70rpx;
+		line-height: 70rpx;
+		font-size: 30rpx;
+		border-radius: 50rpx;
 	}
 </style>
