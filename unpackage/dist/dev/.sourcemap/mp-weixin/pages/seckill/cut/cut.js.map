@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///E:/项萍/熙美小程序12/main.js"],"names":["createPage","Page"],"mappings":";;;;;;;;;;kDAAA,wCAAmB;;AAEnB;AACA,+F;AACAA,UAAU,CAACC,YAAD,CAAV,C","file":"pages/seckill/cut/cut.js","sourcesContent":["import 'uni-pages';import '@dcloudio/uni-stat';\n\nimport Vue from 'vue'\nimport Page from './pages/seckill/cut/cut.vue'\ncreatePage(Page)"],"sourceRoot":""}

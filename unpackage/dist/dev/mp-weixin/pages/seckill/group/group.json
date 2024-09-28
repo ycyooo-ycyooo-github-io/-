@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "拼团",
+  "usingComponents": {
+    "tarbar": "/components/tarbar/tarbar",
+    "tui-countdown": "/components/countdown/countdown"
+  }
+}

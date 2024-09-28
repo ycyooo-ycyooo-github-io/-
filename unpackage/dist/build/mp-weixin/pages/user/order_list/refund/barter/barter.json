@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "申请换货",
+  "usingComponents": {
+    "tui-upload": "/components/tui-upload/tui-upload",
+    "tui-icon": "/components/icon/icon",
+    "tui-numberbox": "/components/numberbox/numberbox"
+  }
+}

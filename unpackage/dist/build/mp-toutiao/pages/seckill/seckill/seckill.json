@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "限时抢购",
+  "navigationBarBackgroundColor": "#FFFFFF",
+  "usingComponents": {
+    "tui-countdown": "/components/countdown/countdown"
+  }
+}

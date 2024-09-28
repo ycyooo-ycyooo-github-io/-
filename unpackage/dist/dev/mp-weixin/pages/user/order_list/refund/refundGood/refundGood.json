@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "申请退货退款",
+  "usingComponents": {
+    "tui-upload": "/components/tui-upload/tui-upload",
+    "tui-icon": "/components/icon/icon"
+  }
+}

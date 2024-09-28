@@ -1,0 +1,15 @@
+{
+  "enablePullDownRefresh": true,
+  "navigationBarTextStyle": "black",
+  "navigationBarTitleText": "购物车",
+  "onReachBottomDistance": 50,
+  "usingComponents": {
+    "tui-scroll-top": "/components/scroll-top/scroll-top",
+    "tui-swipe-action": "/components/swipe-action/swipe-action",
+    "tui-button": "/components/extend/button/button",
+    "tui-numberbox": "/components/numberbox/numberbox",
+    "tui-icon": "/components/icon/icon",
+    "tui-divider": "/components/divider/divider",
+    "tui-loadmore": "/components/loadmore/loadmore"
+  }
+}

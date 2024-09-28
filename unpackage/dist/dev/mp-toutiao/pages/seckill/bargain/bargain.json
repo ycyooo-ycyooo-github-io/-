@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "砍价0元购",
+  "usingComponents": {
+    "tui-icon": "/components/icon/icon",
+    "tui-countdown": "/components/countdown/countdown"
+  }
+}

@@ -140,7 +140,9 @@
 	&.shouhuo:before {
 		content: '\e6b1';
 	}
-
+	&.quanbu:before {
+		content: '\e64d';
+	}
 	&.pingjia:before {
 		content: '\e66b';
 	}

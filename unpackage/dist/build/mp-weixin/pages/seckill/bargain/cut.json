@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "砍价0元拿",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "modal": "/components/modal/modal",
+    "tui-countdown": "/components/countdown/countdown",
+    "ahh5-animated": "/components/ahh5-animated/ahh5-animated"
+  }
+}
